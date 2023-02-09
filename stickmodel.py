@@ -2,7 +2,7 @@ import csdl
 import numpy as np
 
 
-class aero(csdl.Model):
+class StickModel(csdl.Model):
     def initialize(self):
         self.parameters.declare('num_nodes')
     def define(self):
