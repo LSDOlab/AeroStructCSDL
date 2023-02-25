@@ -163,9 +163,33 @@ class ResJac(csdl.Model):
 
         eps = 1e-19
         # get delta_s and delta_r
-        delta_r = SX.sym('delta_r', 3, n - 1)
-        delta_s = SX.sym('delta_s', 3, n - 1)
-        for i in range(0, n - 1):
-            delta_r[:, i] = (r[:, i + 1] - r[:, i] + eps)  # Added a non zero number to avoid the 1/sqrt(dx) singularity at the zero length nodes
-            delta_s[i] = sqrt(
-                (delta_r[0, i]) ** 2 + (delta_r[1, i]) ** 2 + (delta_r[2, i]) ** 2)  # based on ASW, Eq. 49, Page 12
+        delta_r = self.create_output('delta_r',shape=(3,n-1))
+        delta_s = self.create_output('delta_s',shape=(3,n-1))
+        for i in range(0,n-1):
+            delta_r[:, i] = (r[:, i + 1] - r[:, i] + eps)  # added a non zero number to avoid the 1/sqrt(dx) singularity at the zero length nodes
+            delta_s[i] = ((delta_r[0, i])**2 + (delta_r[1, i])**2 + (delta_r[2, i])**2)**0.5  # based on ASW, Eq. 49, Page 12
+
+
+
+
+        # section residual
+        for i in range(0, n):
+            if i <= n - 2:
+                # rows 0-2: strain-displacement (ASW, Eq. 48, page 12)
+                # s_vec = SX.zeros(3, 1)
+                s_vec = self.create_output('s_vec',shape=(3,1),val=np.zeros(3,1))
+                s_vec[1] = 1
+                tempVector = s_vec + 0.5*(strainsCSN[:, i] + strainsCSN[:, i + 1])
+
+                # rows 0-3: ------------------Compatibility Equations------------------
+                Res[0:3, i + 1] = R_prec[0:3] * (
+                        r[:, i + 1] - r[:, i] - delta_s0[i] * mtimes(Ta[i][:, :].T, tempVector) + mtimes(
+                    damp, ((u[:, i + 1] - u[:, i]) - cross((0.5 * (omega[:, i + 1] + omega[:, i])),
+                                                           (r[:, i + 1] - r[:, i])))))
+
+                # rows 3-5: moment-curvature relationship (ASW, Eq. 54, page 13)
+                Res[3:6, i + 1] = R_prec[3:6] * (mtimes(Ka[i][:, :], (theta[:, i + 1] - theta[:, i])) - mtimes(K0a[i, :, :], (
+                        theta0[:, i + 1] - theta0[:, i])) - 0.25 * mtimes((Einv[i][:, :] + Einv[i + 1][:, :]), (
+                        Mcsnp[:, i] + Mcsnp[:, i + 1])) * delta_s[i] + mtimes(damp, (
+                        mtimes(Ka[i][:, :], (damp_MK[:, i + 1] - damp_MK[:, i])) + 0.5 * mtimes((
+                        K[i + 1][:, :] - K[i][:, :]), (damp_MK[:, i + 1] + damp_MK[:, i])))))
