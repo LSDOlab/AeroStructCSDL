@@ -11,9 +11,9 @@ from calcT_ac import calcT_ac
 class ResJac(csdl.Model):
     def initialize(self):
         self.parameters.declare('num_nodes')
-        self.parameters.declare('num_variables')
+        self.parameters.declare('num_variables',default=18)
         self.parameters.declare('bc')
-        self.parameters.declare('g',val=9.81)
+        self.parameters.declare('g',default=9.81)
         self.parameters.declare('options')
     def define(self):
         n = self.parameters['num_nodes']
@@ -26,7 +26,7 @@ class ResJac(csdl.Model):
         xd = self.declare_variable('xd',shape=n) # derivatives of state vector
         xac = self.declare_variable('xac',shape=num_variables) # aircraft state vector
 
-        R_prec = self.declare_variable('R_prec',shape=(12))
+        R_prec = self.declare_variable('R_prec',shape=(24))
 
         Res = self.create_output('Res',shape=(num_variables,n))
 
@@ -60,7 +60,7 @@ class ResJac(csdl.Model):
         delta_Fapplied = self.declare_variable('delta_Fapplied',shape=n,val=0)
         delta_Mapplied = self.declare_variable('delta_Mapplied',shape=n,val=0)
 
-        # Read Stick Model
+        # read the stick model
         mu = self.declare_variable('mu',shape=n)  # 1xn vector of mass/length
         seq = self.declare_variable('seq',shape=n) # is this a csdl variable??? shows up in CalcNodalK in an if statement
         theta0 = self.declare_variable('theta0',shape=n)
