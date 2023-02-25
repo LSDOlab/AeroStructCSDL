@@ -55,14 +55,14 @@ class ResJac(csdl.Model):
         ALPHA0 = xac[15:18]
 
         # forces and moments
-        f_aero = self.declare_variable('f_aero',shape=n)
-        m_aero = self.declare_variable('m_aero',shape=n)
-        delta_Fapplied = self.declare_variable('delta_Fapplied',shape=n)
-        delta_Mapplied = self.declare_variable('delta_Mapplied',shape=n)
+        f_aero = self.declare_variable('f_aero',shape=n,val=0)
+        m_aero = self.declare_variable('m_aero',shape=n,val=0)
+        delta_Fapplied = self.declare_variable('delta_Fapplied',shape=n,val=0)
+        delta_Mapplied = self.declare_variable('delta_Mapplied',shape=n,val=0)
 
         # Read Stick Model
         mu = self.declare_variable('mu',shape=n)  # 1xn vector of mass/length
-        seq = self.declare_variable('seq',shape=n)
+        seq = self.declare_variable('seq',shape=n) # is this a csdl variable??? shows up in CalcNodalK in an if statement
         theta0 = self.declare_variable('theta0',shape=n)
         K0a = self.declare_variable('K0a',shape=n)
         delta_s0 = self.declare_variable('delta_s0',shape=n)
@@ -250,6 +250,6 @@ class ResJac(csdl.Model):
                 # tip
                 Res[6:9, i] = R_prec[18:21]*(varTip[indicesTip[0:3]] - BCtip[indicesTip[0:3]])
                 Res[9:12, i] = R_prec[21:24]*(varTip[indicesTip[3:6]] - BCtip[indicesTip[3:6]])
-                
+
         # endsection
         # return reshape(Res, (18 * n, 1))
