@@ -108,8 +108,7 @@ class ResJac(csdl.Model):
 
 
         # gravity in body fixed axes
-        # T_E = self.calcT_ac(THETA)  # UNS, Eq. 6, Page 5
-        self.add(calcT_ac(),name='calcT_ac')
+        self.add(calcT_ac(),name='calcT_ac') # UNS, Eq. 6, Page 5
         T_E = self.declare_variable('T_E',shape=(3,3)) # shape ?????????
         g_xyz = csdl.matmat(csdl.transpose(T_E),g)
         f_acc = self.create_output('f_acc',shape=(3,n-1))
@@ -222,8 +221,10 @@ class ResJac(csdl.Model):
                 BCroot = BC[element]['root']
                 BCtip = BC[element]['tip']
                 # potential variables to be set as bc
-                varRoot = SX.sym('vr', 12, 1)
-                varTip = SX.sym('vt', 12, 1)
+                # varRoot = SX.sym('vr', 12, 1)
+                varRoot = self.create_output('vr',shape=(12,1))
+                # varTip = SX.sym('vt', 12, 1)
+                varTip = self.create_output('vt',shape=(12,1))
 
                 varRoot[0:3] = r[:, 0]
                 varRoot[3:6] = theta[:, 0]
