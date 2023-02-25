@@ -8,12 +8,13 @@ from calcT_ac import calcT_ac
 
 
 
+
 class ResJac(csdl.Model):
     def initialize(self):
         self.parameters.declare('num_nodes')
         self.parameters.declare('num_variables',default=18)
         self.parameters.declare('bc')
-        self.parameters.declare('g',default=9.81)
+        self.parameters.declare('g',default=np.array([0,0,9.81]))
         self.parameters.declare('options')
     def define(self):
         n = self.parameters['num_nodes']
@@ -21,6 +22,8 @@ class ResJac(csdl.Model):
         bc = self.parameters['bc'] # boundary conditions
         g = self.parameters['g'] # gravity
         options = self.parameters['options'] # options dictionary
+
+        beam_list = options['beam_list']
 
         x = self.declare_variable('x',shape=n) # node state vector
         xd = self.declare_variable('xd',shape=n) # derivatives of state vector
@@ -108,7 +111,6 @@ class ResJac(csdl.Model):
         # T_E = self.calcT_ac(THETA)  # UNS, Eq. 6, Page 5
         self.add(calcT_ac(),name='calcT_ac')
         T_E = self.declare_variable('T_E',shape=(3,3)) # shape ?????????
-        # g_xyz = mtimes(transpose(T_E), g)
         g_xyz = csdl.matmat(csdl.transpose(T_E),g)
         f_acc = self.create_output('f_acc',shape=(3,n-1))
         m_acc = self.create_output('m_acc',shape=(3,n-1))
