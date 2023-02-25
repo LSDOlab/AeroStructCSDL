@@ -13,13 +13,14 @@ class ResJac(csdl.Model):
     def initialize(self):
         self.parameters.declare('num_nodes')
         self.parameters.declare('num_variables',default=18)
-        self.parameters.declare('bc')
+        #self.parameters.declare('bc')
+        self.parameters.declare('element',default=0)
         self.parameters.declare('g',default=np.array([0,0,9.81]))
         self.parameters.declare('options')
     def define(self):
         n = self.parameters['num_nodes']
         num_variables = self.parameters['num_variables']
-        bc = self.parameters['bc'] # boundary conditions
+        #bc = self.parameters['bc'] # boundary conditions
         g = self.parameters['g'] # gravity
         options = self.parameters['options'] # options dictionary
 
@@ -174,7 +175,11 @@ class ResJac(csdl.Model):
 
 
 
+        # potential variables to be set as bc (can't create these vars in the for loop...)
+        varRoot = self.create_output('vr',shape=(n,12,1),val=0)
+        varTip = self.create_output('vt',shape=(n,12,1),val=0)
 
+        """
         # section residual
         for i in range(0, n):
             if i <= n - 2:
@@ -218,23 +223,21 @@ class ResJac(csdl.Model):
                         omega[:, i] - csdl.matmat(T[i][:, :].T, csdl.matmat(K[i][:, :], thetaDot[:, i])))
                 
                 # BOUNDARY CONDITIONS *****************************************
-                BCroot = BC[element]['root']
-                BCtip = BC[element]['tip']
+                BCroot = bc[element]['root']
+                BCtip = bc[element]['tip']
                 # potential variables to be set as bc
                 # varRoot = SX.sym('vr', 12, 1)
-                varRoot = self.create_output('vr',shape=(12,1))
                 # varTip = SX.sym('vt', 12, 1)
-                varTip = self.create_output('vt',shape=(12,1))
 
-                varRoot[0:3] = r[:, 0]
-                varRoot[3:6] = theta[:, 0]
-                varRoot[6:9] = F[:, 0]
-                varRoot[9:12] = M[:, 0]
+                varRoot[i,0:3] = r[:, 0]
+                varRoot[i,3:6] = theta[:, 0]
+                varRoot[i,6:9] = F[:, 0]
+                varRoot[i,9:12] = M[:, 0]
 
-                varTip[0:3] = r[:, i]
-                varTip[3:6] = theta[:, i]
-                varTip[6:9] = F[:, i]
-                varTip[9:12] = M[:, i]
+                varTip[i,0:3] = r[:, i]
+                varTip[i,3:6] = theta[:, i]
+                varTip[i,6:9] = F[:, i]
+                varTip[i,9:12] = M[:, i]
 
                 # indices that show which variables are to be set as bc (each will return 6 indices)
                 indicesRoot_ = (~(BCroot == 8888))
@@ -248,11 +251,12 @@ class ResJac(csdl.Model):
                     if indicesTip_[k]:
                         indicesTip.append(k)
                 # root
-                Res[0:3, 0] = R_prec[12:15]*(varRoot[indicesRoot[0:3]] - BCroot[indicesRoot[0:3]])
-                Res[3:6, 0] = R_prec[15:18]*(varRoot[indicesRoot[3:6]] - BCroot[indicesRoot[3:6]])
+                Res[0:3, 0] = R_prec[12:15]*(varRoot[i,indicesRoot[0:3]] - BCroot[indicesRoot[0:3]])
+                Res[3:6, 0] = R_prec[15:18]*(varRoot[i,indicesRoot[3:6]] - BCroot[indicesRoot[3:6]])
                 # tip
-                Res[6:9, i] = R_prec[18:21]*(varTip[indicesTip[0:3]] - BCtip[indicesTip[0:3]])
-                Res[9:12, i] = R_prec[21:24]*(varTip[indicesTip[3:6]] - BCtip[indicesTip[3:6]])
+                Res[6:9, i] = R_prec[18:21]*(varTip[i,indicesTip[0:3]] - BCtip[indicesTip[0:3]])
+                Res[9:12, i] = R_prec[21:24]*(varTip[i,indicesTip[3:6]] - BCtip[indicesTip[3:6]])
 
         # endsection
         # return reshape(Res, (18 * n, 1))
+        """
