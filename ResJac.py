@@ -14,11 +14,13 @@ class ResJac(csdl.Model):
         self.parameters.declare('num_variables')
         self.parameters.declare('bc')
         self.parameters.declare('g',val=9.81)
+        self.parameters.declare('options')
     def define(self):
         n = self.parameters['num_nodes']
         num_variables = self.parameters['num_variables']
         bc = self.parameters['bc'] # boundary conditions
         g = self.parameters['g'] # gravity
+        options = self.parameters['options'] # options dictionary
 
         x = self.declare_variable('x',shape=n) # node state vector
         xd = self.declare_variable('xd',shape=n) # derivatives of state vector
@@ -118,3 +120,52 @@ class ResJac(csdl.Model):
                     0.5 * (omegaDot[:, ind] + omegaDot[:, ind + 1]))) - csdl.cross(
                 (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1])),
                 csdl.matmat(TiT, (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1]))))
+            
+
+        Mcsn = self.create_output('Mcsn',shape=(3,n))
+        Fcsn = self.create_output('Fcsn',shape=(3,n))
+        Mcsnp = self.create_output('Mcsnp',shape=(3,n))
+        strainsCSN = self.create_output('strainsCSN',shape=(3,n))
+        damp_MK = self.create_output('damp_MK',shape=(3,n))
+
+
+        for ind in range(0, n):
+            # transform xyz -> csn (ASW, Eq. 14, page 6);
+            Mcsn[:, ind] = csdl.matmat(T[ind][:, :], M[:, ind])
+            Fcsn[:, ind] = csdl.matmat(T[ind][:, :], F[:, ind])
+
+            # get Mcsn_prime (ASW, Eq. 18, page 8)
+            Mcsnp[:, ind] = Mcsn[:, ind] + csdl.matmat(csdl.transpose(D[ind][:, :]), Fcsn[:, ind])
+
+            # get strains (ASW, Eq. 19, page 8)
+            strainsCSN[:, ind] = csdl.matmat(oneover[ind][:, :], Fcsn[:, ind]) + csdl.matmat(D[ind][:, :], csdl.matmat(Einv[ind][:, :],
+                                                                                                        Mcsnp[:, ind]))
+
+            # get damping vector for moment-curvature relationship
+            damp_MK[:, ind] = csdl.matmat(inv(K[ind][:, :]), csdl.matmat(T[ind][:, :], omega[:, ind])) # inv ??????????????
+
+        
+        damp = self.create_output('damp',shape=(3,3),val=np.zeros((3,3)))
+        damp[0, 0] = options['t_epsilon']
+        damp[1, 1] = options['t_gamma']
+        damp[2, 2] = options['t_epsilon']
+        # get total distributed force
+        f = f_aero + f_acc
+        m = m_aero + m_acc
+
+        # get average nodal reaction forces
+        Fav = self.create_output('Fav',shape=(3,n-1))
+
+        for i in range(0, n - 1):
+            Fav[:, i] = 0.5 * (F[:, i] + F[:, i + 1])
+        # endsection
+
+
+        eps = 1e-19
+        # get delta_s and delta_r
+        delta_r = SX.sym('delta_r', 3, n - 1)
+        delta_s = SX.sym('delta_s', 3, n - 1)
+        for i in range(0, n - 1):
+            delta_r[:, i] = (r[:, i + 1] - r[:, i] + eps)  # Added a non zero number to avoid the 1/sqrt(dx) singularity at the zero length nodes
+            delta_s[i] = sqrt(
+                (delta_r[0, i]) ** 2 + (delta_r[1, i]) ** 2 + (delta_r[2, i]) ** 2)  # based on ASW, Eq. 49, Page 12
