@@ -26,6 +26,8 @@ class ResJac(csdl.Model):
         xd = self.declare_variable('xd',shape=n) # derivatives of state vector
         xac = self.declare_variable('xac',shape=num_variables) # aircraft state vector
 
+        R_prec = self.declare_variable('R_prec',shape=(12))
+
         Res = self.create_output('Res',shape=(num_variables,n))
 
         # read x
@@ -183,13 +185,71 @@ class ResJac(csdl.Model):
 
                 # rows 0-3: ------------------Compatibility Equations------------------
                 Res[0:3, i + 1] = R_prec[0:3] * (
-                        r[:, i + 1] - r[:, i] - delta_s0[i] * mtimes(Ta[i][:, :].T, tempVector) + mtimes(
-                    damp, ((u[:, i + 1] - u[:, i]) - cross((0.5 * (omega[:, i + 1] + omega[:, i])),
+                        r[:, i + 1] - r[:, i] - delta_s0[i] * csdl.matmat(Ta[i][:, :].T, tempVector) + csdl.matmat(
+                    damp, ((u[:, i + 1] - u[:, i]) - csdl.cross((0.5 * (omega[:, i + 1] + omega[:, i])),
                                                            (r[:, i + 1] - r[:, i])))))
 
                 # rows 3-5: moment-curvature relationship (ASW, Eq. 54, page 13)
-                Res[3:6, i + 1] = R_prec[3:6] * (mtimes(Ka[i][:, :], (theta[:, i + 1] - theta[:, i])) - mtimes(K0a[i, :, :], (
-                        theta0[:, i + 1] - theta0[:, i])) - 0.25 * mtimes((Einv[i][:, :] + Einv[i + 1][:, :]), (
-                        Mcsnp[:, i] + Mcsnp[:, i + 1])) * delta_s[i] + mtimes(damp, (
-                        mtimes(Ka[i][:, :], (damp_MK[:, i + 1] - damp_MK[:, i])) + 0.5 * mtimes((
+                Res[3:6, i + 1] = R_prec[3:6] * (csdl.matmat(Ka[i][:, :], (theta[:, i + 1] - theta[:, i])) - csdl.matmat(K0a[i, :, :], (
+                        theta0[:, i + 1] - theta0[:, i])) - 0.25 * csdl.matmat((Einv[i][:, :] + Einv[i + 1][:, :]), (
+                        Mcsnp[:, i] + Mcsnp[:, i + 1])) * delta_s[i] + csdl.matmat(damp, (
+                        csdl.matmat(Ka[i][:, :], (damp_MK[:, i + 1] - damp_MK[:, i])) + 0.5 * csdl.matmat((
                         K[i + 1][:, :] - K[i][:, :]), (damp_MK[:, i + 1] + damp_MK[:, i])))))
+                
+                # rows 6-8: force equilibrium (ASW, Eq. 56, page 13)
+                Res[6:9, i] = R_prec[6:9] * (F[:, i + 1] - F[:, i] + csdl.matmat(f[:, i], delta_s[i]) + delta_Fapplied[:, i])
+
+                # rows 9-11: moment equilibrium (ASW, Eq. 55, page 13)
+                Res[9:12, i] = R_prec[9:12] * (
+                        M[:, i + 1] - M[:, i] + m[:, i] * delta_s[i] + delta_Mapplied[:, i] + csdl.cross(delta_r[:, i],
+                                                                                                    Fav[:, i]))
+                
+                # Rows 12-14
+                Res[12:15, i] = (u[:, i] - rDot[:, i])
+
+                # Rows 15-17 (UNS, Eq. 2, page 4);
+                Res[15:18, i] = (omega[:, i] - csdl.matmat(csdl.matmat(T[i][:, :].T, K[i][:, :]), thetaDot[:, i]))
+
+            else:
+
+                Res[12:15, i] = (u[:, i] - rDot[:, i])
+                Res[15:18, i] = (
+                        omega[:, i] - csdl.matmat(T[i][:, :].T, csdl.matmat(K[i][:, :], thetaDot[:, i])))
+                
+                # BOUNDARY CONDITIONS *****************************************
+                BCroot = BC[element]['root']
+                BCtip = BC[element]['tip']
+                # potential variables to be set as bc
+                varRoot = SX.sym('vr', 12, 1)
+                varTip = SX.sym('vt', 12, 1)
+
+                varRoot[0:3] = r[:, 0]
+                varRoot[3:6] = theta[:, 0]
+                varRoot[6:9] = F[:, 0]
+                varRoot[9:12] = M[:, 0]
+
+                varTip[0:3] = r[:, i]
+                varTip[3:6] = theta[:, i]
+                varTip[6:9] = F[:, i]
+                varTip[9:12] = M[:, i]
+
+                # indices that show which variables are to be set as bc (each will return 6 indices)
+                indicesRoot_ = (~(BCroot == 8888))
+                indicesTip_ = (~(BCtip == 8888))
+
+                indicesRoot = []
+                indicesTip = []
+                for k in range(0, len(indicesRoot_)):
+                    if indicesRoot_[k]:
+                        indicesRoot.append(k)
+                    if indicesTip_[k]:
+                        indicesTip.append(k)
+                # root
+                Res[0:3, 0] = R_prec[12:15]*(varRoot[indicesRoot[0:3]] - BCroot[indicesRoot[0:3]])
+                Res[3:6, 0] = R_prec[15:18]*(varRoot[indicesRoot[3:6]] - BCroot[indicesRoot[3:6]])
+                # tip
+                Res[6:9, i] = R_prec[18:21]*(varTip[indicesTip[0:3]] - BCtip[indicesTip[0:3]])
+                Res[9:12, i] = R_prec[21:24]*(varTip[indicesTip[3:6]] - BCtip[indicesTip[3:6]])
+                
+        # endsection
+        # return reshape(Res, (18 * n, 1))
