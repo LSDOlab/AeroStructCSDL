@@ -71,11 +71,11 @@ class ResJac(csdl.Model):
         K0a = self.declare_variable('K0a',shape=n)
         delta_s0 = self.declare_variable('delta_s0',shape=n)
         
-        i_matrix = self.create_output('i_matrix',shape=(3,3,n-1))
-        delta_rCG_tilde = self.create_output('delta_rCG_tilde',shape=(3,3,n-1))
-        Einv = self.create_output('Einv',shape=(3,3,n))
-        D = self.create_output('D',shape=(3,3,n))
-        oneover = self.create_output('oneover',shape=(3,3,n))
+        #i_matrix = self.create_output('i_matrix',shape=(3,3,n-1))
+        #delta_rCG_tilde = self.create_output('delta_rCG_tilde',shape=(3,3,n-1))
+        #Einv = self.create_output('Einv',shape=(3,3,n))
+        #D = self.create_output('D',shape=(3,3,n))
+        #oneover = self.create_output('oneover',shape=(3,3,n))
 
         """
         # do nodal quantities of symbolic pieces in 3D matrices:
@@ -95,15 +95,16 @@ class ResJac(csdl.Model):
             j = j + 1
         """
         self.add(calc_a_cg(num_nodes=n),name='calc_a_cg')
-        a_cg = self.declare_variable('a_cg',shape=(n)) # shape ??
+        aCG = self.declare_variable('aCG',shape=(3,n-1))
         
         # get T and K matrices:
         self.add(CalcNodalT(num_nodes=n,seq=seq),name='CalcNodalT')
-        T = self.declare_variable('T',shape=(n)) # shape ??????????????
-        Ta = self.declare_variable('Ta',shape=(n)) # shape ??????????????
-        """
+        T = self.declare_variable('T',shape=(3,3,n))
+        Ta = self.declare_variable('Ta',shape=(3,3,n-1))
+        
         #K, Ka = self.CalcNodalK(theta, seq)
         self.add(CalcNodalK(num_nodes=n),name='CalcNodalK')
+        """
         K = self.declare_variable('K',shape=(n)) # shape ??????????????
         Ka = self.declare_variable('Ka',shape=(n)) # shape ??????????????
 
