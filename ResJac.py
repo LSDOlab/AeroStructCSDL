@@ -23,7 +23,8 @@ class ResJac(csdl.Model):
         num_variables = self.parameters['num_variables']
         #bc = self.parameters['bc'] # boundary conditions
         element = self.parameters['element']
-        g = self.parameters['g'] # gravity
+        gravity = self.parameters['g'] # gravity
+        g = self.create_input('g',val=gravity,shape=(3))
         options = self.parameters['options'] # options dictionary
         seq = self.parameters['seq']
 
@@ -64,7 +65,7 @@ class ResJac(csdl.Model):
         
         # read the aircraft states
         R = xac[0:3]
-        # self.register_output('R',R)
+        # self.register_output('R',R) # duplicate R variable output?
         U = xac[3:6]
         self.register_output('U',U)
         A0 = xac[6:9]
@@ -112,7 +113,7 @@ class ResJac(csdl.Model):
             j = j + 1
         """
         self.add(calc_a_cg(num_nodes=n),name='calc_a_cg')
-        aCG = self.declare_variable('aCG',shape=(3,n-1))
+        a_cg = self.declare_variable('aCG',shape=(3,n-1))
         
         # get T and K matrices:
         self.add(CalcNodalT(num_nodes=n,seq=seq),name='CalcNodalT')
@@ -126,23 +127,26 @@ class ResJac(csdl.Model):
         
         # gravity in body fixed axes
         self.add(calcT_ac(),name='calcT_ac') # UNS, Eq. 6, Page 5
-        """
-        T_E = self.declare_variable('T_E',shape=(3,3)) # shape ?????????
-        g_xyz = csdl.matmat(csdl.transpose(T_E),g)
+        T_E = self.declare_variable('T_E',shape=(3,3))
+        
+        g_xyz = csdl.matvec(csdl.transpose(T_E),g)
         f_acc = self.create_output('f_acc',shape=(3,n-1))
         m_acc = self.create_output('m_acc',shape=(3,n-1))
 
-
+        
         for ind in range(0, n - 1):
-            f_acc[:, ind] = csdl.matmat(mu[ind], (g_xyz - a_cg[:, ind]))
-            TiT = csdl.matmat((0.5 * (csdl.transpose(T[ind][:, :]) + csdl.transpose(T[ind + 1][:, :]))),
-                         csdl.matmat(i_matrix[ind][:, :], (0.5 * (T[ind][:, :] + T[ind + 1][:, :]))))
-            m_acc[:, ind] = csdl.matmat(delta_rCG_tilde[ind][:, :], f_acc[:, ind]) - csdl.matmat(TiT, ALPHA0 + (
-                    0.5 * (omegaDot[:, ind] + omegaDot[:, ind + 1]))) - csdl.cross(
-                (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1])),
-                csdl.matmat(TiT, (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1]))))
-            
+            inner_term = csdl.expand(g_xyz,(3,1),'i->ij') - a_cg[:, ind] # (3,1)
+            # f_acc[:, ind] = csdl.matmat(csdl.expand(mu[ind],(1,1)), inner_term)
+            f_acc[:, ind] = csdl.expand(csdl.matvec(inner_term,mu[ind]),(3,1),'i->ij') # I think this is right...
 
+            #TiT = csdl.matmat((0.5 * (csdl.transpose(T[ind][:, :]) + csdl.transpose(T[ind + 1][:, :]))),
+            #             csdl.matmat(i_matrix[ind][:, :], (0.5 * (T[ind][:, :] + T[ind + 1][:, :]))))
+            #m_acc[:, ind] = csdl.matmat(delta_rCG_tilde[ind][:, :], f_acc[:, ind]) - csdl.matmat(TiT, ALPHA0 + (
+            #        0.5 * (omegaDot[:, ind] + omegaDot[:, ind + 1]))) - csdl.cross(
+            #    (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1])),
+            #    csdl.matmat(TiT, (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1]))))
+            
+        """
         Mcsn = self.create_output('Mcsn',shape=(3,n))
         Fcsn = self.create_output('Fcsn',shape=(3,n))
         Mcsnp = self.create_output('Mcsnp',shape=(3,n))
