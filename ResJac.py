@@ -102,13 +102,11 @@ class ResJac(csdl.Model):
         T = self.declare_variable('T',shape=(3,3,n))
         Ta = self.declare_variable('Ta',shape=(3,3,n-1))
         
-        #K, Ka = self.CalcNodalK(theta, seq)
-        self.add(CalcNodalK(num_nodes=n),name='CalcNodalK')
+        self.add(CalcNodalK(num_nodes=n,seq=seq),name='CalcNodalK')
+        K = self.declare_variable('K',shape=(3,3,n))
+        Ka = self.declare_variable('Ka',shape=(3,3,n-1))
+
         """
-        K = self.declare_variable('K',shape=(n)) # shape ??????????????
-        Ka = self.declare_variable('Ka',shape=(n)) # shape ??????????????
-
-
         # gravity in body fixed axes
         self.add(calcT_ac(),name='calcT_ac') # UNS, Eq. 6, Page 5
         T_E = self.declare_variable('T_E',shape=(3,3)) # shape ?????????

@@ -15,7 +15,7 @@ class CalcNodalT(csdl.Model):
         Ta = self.create_output('Ta',shape=(3,3,n-1))
         R = self.create_output('R', shape=(n,3,3,3))
 
-        th = self.declare_variable('th',shape=(3,n)) # shape ?
+        th = self.declare_variable('th',shape=(3,n))
 
         one = self.declare_variable('one',val=1)
         zero = self.declare_variable('zero',val=0)
