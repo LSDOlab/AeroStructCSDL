@@ -98,7 +98,6 @@ class ResJac(csdl.Model):
         a_cg = self.declare_variable('a_cg',shape=(n)) # shape ??
         
         # get T and K matrices:
-        #T, Ta = CalcNodalT(theta, seq, n=n)
         self.add(CalcNodalT(num_nodes=n,seq=seq),name='CalcNodalT')
         T = self.declare_variable('T',shape=(n)) # shape ??????????????
         Ta = self.declare_variable('Ta',shape=(n)) # shape ??????????????
