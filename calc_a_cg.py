@@ -45,7 +45,6 @@ class calc_a_cg(csdl.Model):
 
             # inner3 = mtimes(riT, OMEGA)
             collapsed_riT = csdl.reshape(riT[i,:,:],new_shape=(3,3))
-            # inner3 = csdl.matvec(riT[i,:,:],OMEGA)
             inner3 = csdl.matvec(collapsed_riT,OMEGA)
 
             
@@ -58,65 +57,96 @@ class calc_a_cg(csdl.Model):
             inner3T[i,2, 0] = csdl.expand(-inner3[1],(1,1,1))
             inner3T[i,2, 1] = csdl.expand(inner3[0],(1,1,1))
             inner3T[i,2, 2] = csdl.expand(zero,(1,1,1))
-            """
+            
             # for OMEGA X ui
-            uiT[i,0, 0] = 0
-            uiT[i,0, 1] = -ri[2]
-            uiT[i,0, 2] = ri[1]
-            uiT[i,1, 0] = ri[2]
-            uiT[i,1, 1] = 0
-            uiT[i,1, 2] = -ri[0]
-            uiT[i,2, 0] = -ri[1]
-            uiT[i,2, 1] = ri[0]
-            uiT[i,2, 2] = 0
-
+            uiT[i,0, 0] = csdl.expand(zero,(1,1,1))
+            uiT[i,0, 1] = csdl.expand(-ri[2,0],(1,1,1),'ij->ijk')
+            uiT[i,0, 2] = csdl.expand(ri[1,0],(1,1,1),'ij->ijk')
+            uiT[i,1, 0] = csdl.expand(ri[2,0],(1,1,1),'ij->ijk')
+            uiT[i,1, 1] = csdl.expand(zero,(1,1,1))
+            uiT[i,1, 2] = csdl.expand(-ri[0,0],(1,1,1),'ij->ijk')
+            uiT[i,2, 0] = csdl.expand(-ri[1,0],(1,1,1),'ij->ijk')
+            uiT[i,2, 1] = csdl.expand(ri[0,0],(1,1,1),'ij->ijk')
+            uiT[i,2, 2] = csdl.expand(zero,(1,1,1))
+            
             # a_i (UNS, Eq. 23, Page 7)
-            #a_i[:, i] = A0 + uDoti + mtimes(riT, ALPHA0) + mtimes(inner3T, OMEGA) + 2 * mtimes(uiT, OMEGA)
-            a_i[:,i] = A0 + uDoti + csdl.matmat(riT[i,:,:],ALPHA0) + csdl.matmat(inner3T[i,:,:],OMEGA) + 2*csdl.matmat(uiT[i,:,:],OMEGA)
+            # a_i[:, i] = A0 + uDoti + mtimes(riT, ALPHA0) + mtimes(inner3T, OMEGA) + 2 * mtimes(uiT, OMEGA)
+            term_1 = csdl.expand(A0,(3,1),'i->ij') + uDoti # (3,1)
+            term_2 = csdl.expand(csdl.matvec(collapsed_riT,ALPHA0),(3,1),'i->ij') # (3,1)
+            collapsed_inner3T = csdl.reshape(inner3T[i,:,:],new_shape=(3,3)) # (3,3)
+            term_3 = csdl.expand(csdl.matvec(collapsed_inner3T,OMEGA),(3,1),'i->ij') # (3,1)
+            collapsed_uiT = csdl.reshape(uiT[i,:,:],new_shape=(3,3)) # (3,3)
+            term_4 = 2*csdl.expand(csdl.matvec(collapsed_uiT,OMEGA),(3,1),'i->ij') # (3,1)
+            a_i[:,i] = term_1 + term_2 + term_3 + term_4
+
+        
 
 
+        delta_rCG_tilde = self.declare_variable('delta_rCG_tilde',shape=(3,3,n-1))
+        omega = self.declare_variable('omega',shape=(3,n))
+        omegaDot = self.declare_variable('omegaDot',shape=(3,n))
+        innerT = self.create_output('innerT',shape=(n-1,3,3))
+        inner2T = self.create_output('inner2T',shape=(n-1,3,3))
 
         # acceleration of the element
         for i in range(0, n - 1):
-            innerT = SX.sym('innerT', 3, 3)
-            inner2T = SX.sym('inner3T', 3, 3)
+            #innerT = SX.sym('innerT', 3, 3)
+            #inner2T = SX.sym('inner3T', 3, 3)
+
             # current element quantities
-            drCG = delta_rCG_tilde[i][:, :]
+            # drCG = delta_rCG_tilde[i][:, :]
+            drCG = delta_rCG_tilde[:,:,i]
+            collapsed_drCG = csdl.reshape(drCG,new_shape=(3,3))
+            
             # current node quantities
             omi = omega[:, i]
             omDoti = omegaDot[:, i]
             ai = a_i[:, i]
             # next node quantities
-            omi1 = omega[:, i + 1];
+            omi1 = omega[:, i + 1]
             omDoti1 = omegaDot[:, i + 1]
             ai1 = a_i[:, i + 1]
-
+            
             # for OMEGA X (OMEGA X delta_rCG)
-            inner = mtimes(drCG, OMEGA)
-            innerT[0, 0] = 0
-            innerT[0, 1] = -inner[2]
-            innerT[0, 2] = inner[1]
-            innerT[1, 0] = inner[2]
-            innerT[1, 1] = 0
-            innerT[1, 2] = -inner[0]
-            innerT[2, 0] = -inner[1]
-            innerT[2, 1] = inner[0]
-            innerT[2, 2] = 0
+            # inner = mtimes(drCG, OMEGA)
+            inner = csdl.matvec(collapsed_drCG,OMEGA)
+            innerT[i,0, 0] = csdl.expand(zero,(1,1,1))
+            innerT[i,0, 1] = csdl.expand(-inner[2],(1,1,1))
+            innerT[i,0, 2] = csdl.expand(inner[1],(1,1,1))
+            innerT[i,1, 0] = csdl.expand(inner[2],(1,1,1))
+            innerT[i,1, 1] = csdl.expand(zero,(1,1,1))
+            innerT[i,1, 2] = csdl.expand(-inner[0],(1,1,1))
+            innerT[i,2, 0] = csdl.expand(-inner[1],(1,1,1))
+            innerT[i,2, 1] = csdl.expand(inner[0],(1,1,1))
+            innerT[i,2, 2] = csdl.expand(zero,(1,1,1))
+            
             # for omega_i X (omega_i X delta_rCG)
-            inner2 = mtimes(drCG, (0.5 * (omi + omi1)))
-            inner2T[0, 0] = 0
-            inner2T[0, 1] = -inner2[2]
-            inner2T[0, 2] = inner2[1]
-            inner2T[1, 0] = inner2[2]
-            inner2T[1, 1] = 0
-            inner2T[1, 2] = -inner2[0]
-            inner2T[2, 0] = -inner2[1]
-            inner2T[2, 1] = inner2[0]
-            inner2T[2, 2] = 0
+            # inner2 = mtimes(drCG, (0.5 * (omi + omi1)))
+            vec = csdl.reshape((0.5 * (omi + omi1)),new_shape=(3,))
+            inner2 = csdl.matvec(collapsed_drCG,vec)
+            
+            inner2T[i,0, 0] = csdl.expand(zero,(1,1,1))
+            inner2T[i,0, 1] = csdl.expand(-inner2[2],(1,1,1))
+            inner2T[i,0, 2] = csdl.expand(inner2[1],(1,1,1))
+            inner2T[i,1, 0] = csdl.expand(inner2[2],(1,1,1))
+            inner2T[i,1, 1] = csdl.expand(zero,(1,1,1))
+            inner2T[i,1, 2] = csdl.expand(-inner2[0],(1,1,1))
+            inner2T[i,2, 0] = csdl.expand(-inner2[1],(1,1,1))
+            inner2T[i,2, 1] = csdl.expand(inner2[0],(1,1,1))
+            inner2T[i,2, 2] = csdl.expand(zero,(1,1,1))
+            
             # nodal a_cg (UNS, eq. 38, Page 9)
-            aCG[:, i] = 0.5 * (ai + ai1) + mtimes(drCG, (ALPHA0 + (0.5 * (omDoti + omDoti1)))) + mtimes(innerT,
-                                                                                                        OMEGA) + mtimes(
-                inner2T, (
-                        0.5 * (omi + omi1))) + 2 * mtimes(inner2T, OMEGA)
-        # return aCG
-        """
+            term_1 = 0.5 * (ai + ai1) # (3,1)
+            term_2 = csdl.expand(csdl.matvec(collapsed_drCG,(ALPHA0 + csdl.reshape((0.5 * (omDoti + omDoti1)),new_shape=(3,)))), (3,1),'i->ij')
+            collapsed_innerT = csdl.reshape(innerT[i,:,:],new_shape=(3,3))
+            term_3 = csdl.expand(csdl.matvec(collapsed_innerT,OMEGA), (3,1),'i->ij')
+            collapsed_inner2T = csdl.reshape(inner2T[i,:,:],new_shape=(3,3))
+            term_4 = csdl.expand(csdl.matvec(collapsed_inner2T,csdl.reshape((0.5 * (omi + omi1)),new_shape=(3,))), (3,1),'i->ij')
+            term_5 = csdl.expand(2*csdl.matvec(collapsed_inner2T,OMEGA), (3,1),'i->ij')
+
+            aCG[:, i] = term_1 + term_2 + term_3 + term_4 + term_5
+            
+            #aCG[:, i] = 0.5 * (ai + ai1) + mtimes(drCG, (ALPHA0 + (0.5 * (omDoti + omDoti1)))) + mtimes(innerT,
+            #                                                                                            OMEGA) + mtimes(
+            #    inner2T, (
+            #            0.5 * (omi + omi1))) + 2 * mtimes(inner2T, OMEGA)
