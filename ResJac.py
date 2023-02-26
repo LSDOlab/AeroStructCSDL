@@ -17,6 +17,7 @@ class ResJac(csdl.Model):
         self.parameters.declare('element',default=0)
         self.parameters.declare('g',default=np.array([0,0,9.81]))
         self.parameters.declare('options')
+        self.parameters.declare('seq')
     def define(self):
         n = self.parameters['num_nodes']
         num_variables = self.parameters['num_variables']
@@ -24,6 +25,7 @@ class ResJac(csdl.Model):
         element = self.parameters['element']
         g = self.parameters['g'] # gravity
         options = self.parameters['options'] # options dictionary
+        seq = self.parameters['seq']
 
         x = self.declare_variable('x',shape=(num_variables,n)) # state vector
         xd = self.declare_variable('xd',shape=(num_variables,n)) # derivatives of state vector
@@ -65,7 +67,6 @@ class ResJac(csdl.Model):
         
         # read the stick model
         mu = self.declare_variable('mu',shape=n)  # 1xn vector of mass/length
-        seq = self.declare_variable('seq',shape=n) # is this a csdl variable??? shows up in CalcNodalK in an if statement
         theta0 = self.declare_variable('theta0',shape=n)
         K0a = self.declare_variable('K0a',shape=n)
         delta_s0 = self.declare_variable('delta_s0',shape=n)
@@ -98,7 +99,7 @@ class ResJac(csdl.Model):
         
         # get T and K matrices:
         #T, Ta = CalcNodalT(theta, seq, n=n)
-        self.add(CalcNodalT(num_nodes=n),name='CalcNodalT')
+        self.add(CalcNodalT(num_nodes=n,seq=seq),name='CalcNodalT')
         T = self.declare_variable('T',shape=(n)) # shape ??????????????
         Ta = self.declare_variable('Ta',shape=(n)) # shape ??????????????
         """
