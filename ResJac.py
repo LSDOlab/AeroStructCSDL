@@ -64,7 +64,7 @@ class ResJac(csdl.Model):
         
         # read the aircraft states
         R = xac[0:3]
-        self.register_output('R',R)
+        # self.register_output('R',R)
         U = xac[3:6]
         self.register_output('U',U)
         A0 = xac[6:9]
