@@ -30,34 +30,51 @@ class ResJac(csdl.Model):
         x = self.declare_variable('x',shape=(num_variables,n)) # state vector
         xd = self.declare_variable('xd',shape=(num_variables,n)) # derivatives of state vector
         xac = self.declare_variable('xac',shape=(num_variables)) # aircraft state vector
-
         R_prec = self.declare_variable('R_prec',shape=(24))
 
         # Res = self.create_output('Res',shape=(num_variables,n),val=0)
         
         # read x
         r = x[0:3, :]
+        self.register_output('r',r)
         theta = x[3:6, :]
+        self.register_output('theta',theta)
         F = x[6:9, :]
+        self.register_output('F',F)
         M = x[9:12, :]
+        self.register_output('M',M)
         u = x[12:15, :]
+        self.register_output('u',u)
         omega = x[15:18, :]
+        self.register_output('omega',omega)
 
         # read xDot
         rDot = xd[0:3, :]
+        self.register_output('rDot',rDot)
         thetaDot = xd[3:6, :]
+        self.register_output('thetaDot',thetaDot)
         FDot = xd[6:9, :]
+        self.register_output('FDot',FDot)
         MDot = xd[9:12, :]
+        self.register_output('MDot',MDot)
         uDot = xd[12:15, :]
+        self.register_output('uDot',uDot)
         omegaDot = xd[15:18, :]
+        self.register_output('omegaDot',omegaDot)
         
         # read the aircraft states
         R = xac[0:3]
+        self.register_output('R',R)
         U = xac[3:6]
+        self.register_output('U',U)
         A0 = xac[6:9]
+        self.register_output('A0',A0)
         THETA = xac[9:12]
+        self.register_output('THETA',THETA)
         OMEGA = xac[12:15]
+        self.register_output('OMEGA',OMEGA)
         ALPHA0 = xac[15:18]
+        self.register_output('ALPHA0',ALPHA0)
         
         # forces and moments
         f_aero = self.declare_variable('f_aero',shape=n,val=0)
@@ -106,9 +123,10 @@ class ResJac(csdl.Model):
         K = self.declare_variable('K',shape=(3,3,n))
         Ka = self.declare_variable('Ka',shape=(3,3,n-1))
 
-        """
+        
         # gravity in body fixed axes
         self.add(calcT_ac(),name='calcT_ac') # UNS, Eq. 6, Page 5
+        """
         T_E = self.declare_variable('T_E',shape=(3,3)) # shape ?????????
         g_xyz = csdl.matmat(csdl.transpose(T_E),g)
         f_acc = self.create_output('f_acc',shape=(3,n-1))

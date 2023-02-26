@@ -10,7 +10,7 @@ class calcT_ac(csdl.Model):
     def define(self):
         n = self.parameters['num_nodes']
 
-        TH = self.declare_variable('TH',shape=(3)) # shape ???????????
+        TH = self.declare_variable('THETA',shape=(3))
 
         # rotation matrix (3x3) that rotates a vector in xyz to XYZ as follows:
         # A_XYZ = T_E * A_xyz

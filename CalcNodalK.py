@@ -11,7 +11,7 @@ class CalcNodalK(csdl.Model):
         n = self.parameters['num_nodes']
         seq = self.parameters['seq']
 
-        th = self.declare_variable('th',shape=(3,n))
+        th = self.declare_variable('theta',shape=(3,n))
 
         K = self.create_output('K',shape=(3,3,n))
         Ka = self.create_output('Ka',shape=(3,3,n-1))
