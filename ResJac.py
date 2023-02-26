@@ -95,12 +95,13 @@ class ResJac(csdl.Model):
         """
         self.add(calc_a_cg(num_nodes=n),name='calc_a_cg')
         a_cg = self.declare_variable('a_cg',shape=(n)) # shape ??
-        """
+        
         # get T and K matrices:
         #T, Ta = CalcNodalT(theta, seq, n=n)
         self.add(CalcNodalT(num_nodes=n),name='CalcNodalT')
         T = self.declare_variable('T',shape=(n)) # shape ??????????????
         Ta = self.declare_variable('Ta',shape=(n)) # shape ??????????????
+        """
         #K, Ka = self.CalcNodalK(theta, seq)
         self.add(CalcNodalK(num_nodes=n),name='CalcNodalK')
         K = self.declare_variable('K',shape=(n)) # shape ??????????????
