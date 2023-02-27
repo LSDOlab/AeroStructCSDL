@@ -95,6 +95,12 @@ class ResJac(csdl.Model):
         #D = self.create_output('D',shape=(3,3,n))
         #oneover = self.create_output('oneover',shape=(3,3,n))
 
+        i_matrix = self.declare_variable('i_matrix',shape=(3,3,n-1))
+        delta_rCG_tilde = self.declare_variable('delta_rCG_tilde',shape=(3,3,n-1))
+        Einv = self.declare_variable('Einv',shape=(3,3,n))
+        D = self.declare_variable('D',shape=(3,3,n))
+        oneover = self.declare_variable('oneover',shape=(3,3,n))
+
         """
         # do nodal quantities of symbolic pieces in 3D matrices:
         j = 0
@@ -112,6 +118,7 @@ class ResJac(csdl.Model):
             i_matrix[j][:, :] = beam_list['i_matrix'][j][:, :]
             j = j + 1
         """
+
         self.add(calc_a_cg(num_nodes=n),name='calc_a_cg')
         a_cg = self.declare_variable('aCG',shape=(3,n-1))
         
@@ -141,6 +148,17 @@ class ResJac(csdl.Model):
 
             #TiT = csdl.matmat((0.5 * (csdl.transpose(T[ind][:, :]) + csdl.transpose(T[ind + 1][:, :]))),
             #             csdl.matmat(i_matrix[ind][:, :], (0.5 * (T[ind][:, :] + T[ind + 1][:, :]))))
+
+            collapsed_t_ind = csdl.reshape(T[:,:,ind], new_shape=(3,3))
+            collapsed_t_ind_1 = csdl.reshape(T[:,:,ind+1], new_shape=(3,3))
+            t_1 = 0.5 * (csdl.transpose(collapsed_t_ind) + csdl.transpose(collapsed_t_ind_1))
+            inner_term_1 = csdl.reshape(i_matrix[:,:,ind], new_shape=(3,3))
+            inner_term_2 = csdl.reshape(0.5 * (T[:,:,ind] + T[:,:,ind+1]), new_shape=(3,3))
+            t_2 = csdl.matmat(inner_term_1, inner_term_2)
+
+            TiT = csdl.matmat(t_1, t_2)
+
+
             #m_acc[:, ind] = csdl.matmat(delta_rCG_tilde[ind][:, :], f_acc[:, ind]) - csdl.matmat(TiT, ALPHA0 + (
             #        0.5 * (omegaDot[:, ind] + omegaDot[:, ind + 1]))) - csdl.cross(
             #    (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1])),
