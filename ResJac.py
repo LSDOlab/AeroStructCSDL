@@ -14,7 +14,7 @@ class ResJac(csdl.Model):
     def initialize(self):
         self.parameters.declare('num_nodes')
         self.parameters.declare('num_variables',default=18)
-        #self.parameters.declare('bc')
+        self.parameters.declare('bc')
         self.parameters.declare('element',default=0)
         self.parameters.declare('g',default=np.array([0,0,9.81]))
         self.parameters.declare('options')
@@ -22,7 +22,7 @@ class ResJac(csdl.Model):
     def define(self):
         n = self.parameters['num_nodes']
         num_variables = self.parameters['num_variables']
-        #bc = self.parameters['bc'] # boundary conditions
+        bc = self.parameters['bc'] # boundary conditions
         element = self.parameters['element']
         gravity = self.parameters['g'] # gravity
         g = self.create_input('g',val=gravity,shape=(3))
@@ -249,8 +249,8 @@ class ResJac(csdl.Model):
 
         
         # potential variables to be set as bc (can't create these vars in the for loop...)
-        #varRoot = self.create_output('vr',shape=(12,1,n),val=0)
-        #varTip = self.create_output('vt',shape=(12,1,n),val=0)
+        varRoot = self.create_output('vr',shape=(12,n),val=0)
+        varTip = self.create_output('vt',shape=(12,n),val=0)
         # also can't create s_vec in the loop
         s_vec = self.create_output('s_vec',shape=(3,1,n),val=np.zeros((3,1,n)))
 
@@ -336,34 +336,41 @@ class ResJac(csdl.Model):
 
 
                 # Rows 15-17 (UNS, Eq. 2, page 4);
-                #Res[15:18, i] = (omega[:, i] - mtimes(mtimes(T[i][:, :].T, K[i][:, :]), thetaDot[:, i]))
-
                 collapsed_T = csdl.reshape(T[:,:,i], new_shape=(3,3))
                 Res[15:18, i] = omega[:, i] - csdl.expand(csdl.matvec(csdl.matmat(csdl.transpose(collapsed_T), collapsed_K), csdl.reshape(thetaDot[:,i], new_shape=(3))), (3,1),'i->ij')
 
-"""
+
             else:
 
                 Res[12:15, i] = (u[:, i] - rDot[:, i])
-                Res[15:18, i] = (
-                        omega[:, i] - csdl.matmat(T[i][:, :].T, csdl.matmat(K[i][:, :], thetaDot[:, i])))
                 
+                #Res[15:18, i] = (
+                #        omega[:, i] - csdl.matmat(T[i][:, :].T, csdl.matmat(K[i][:, :], thetaDot[:, i])))
+                collapsed_T = csdl.reshape(T[:,:,i], new_shape=(3,3))
+                collapsed_K = csdl.reshape(K[:,:,i], new_shape=(3,3))
+                collapsed_thetaDot = csdl.reshape(thetaDot[:,i], new_shape=(3))
+
+                Res[15:18, i] = omega[:, i] - csdl.expand(csdl.matvec(csdl.transpose(collapsed_T), csdl.matvec(collapsed_K,collapsed_thetaDot)), (3,1),'i->ij')
+                
+
                 # BOUNDARY CONDITIONS *****************************************
-                BCroot = bc[element]['root']
-                BCtip = bc[element]['tip']
+                BCroot = bc['root']
+                BCtip = bc['tip']
                 # potential variables to be set as bc
                 # varRoot = SX.sym('vr', 12, 1)
                 # varTip = SX.sym('vt', 12, 1)
 
-                varRoot[i,0:3] = r[:, 0]
-                varRoot[i,3:6] = theta[:, 0]
-                varRoot[i,6:9] = F[:, 0]
-                varRoot[i,9:12] = M[:, 0]
+                varRoot[0:3,i] = r[:, 0]
+                varRoot[3:6,i] = theta[:, 0]
+                varRoot[6:9,i] = F[:, 0]
+                varRoot[9:12,i] = M[:, 0]
 
-                varTip[i,0:3] = r[:, i]
-                varTip[i,3:6] = theta[:, i]
-                varTip[i,6:9] = F[:, i]
-                varTip[i,9:12] = M[:, i]
+                varTip[0:3,i] = r[:, i]
+                varTip[3:6,i] = theta[:, i]
+                varTip[6:9,i] = F[:, i]
+                varTip[9:12,i] = M[:, i]
+
+                """
 
                 # indices that show which variables are to be set as bc (each will return 6 indices)
                 indicesRoot_ = (~(BCroot == 8888))
