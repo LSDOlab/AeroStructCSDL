@@ -279,7 +279,7 @@ class ResJac(csdl.Model):
                 inner_t2 = collapsed_u_term - csdl.cross((0.5*(collapsed_omega_i_1 + collapsed_omega_i)), collapsed_r_term, axis=0)
                 t2 = csdl.matvec(damp, inner_t2)
 
-                Res[0:3,i+1] = csdl.expand(R_prec[0:3]*(collapsed_r_term - t1 + t2), (3,1),'i->ijk')
+                Res[0:3,i+1] = csdl.expand(R_prec[0:3]*(collapsed_r_term - t1 + t2), (3,1),'i->ij')
                 
                 
                 # rows 3-5: moment-curvature relationship (ASW, Eq. 54, page 13)
@@ -292,16 +292,13 @@ class ResJac(csdl.Model):
                 collapsed_theta_1 = csdl.reshape(theta[:,i+1], new_shape=(3))
                 collapsed_theta = csdl.reshape(theta[:,i], new_shape=(3))
                 t_1 = csdl.matvec(collapsed_Ka, (collapsed_theta_1 - collapsed_theta))
-
                 collapsed_K0a = csdl.reshape(K0a[i,:,:], new_shape=(3,3))
                 t_2 = csdl.matvec(collapsed_K0a, (collapsed_theta_1 - collapsed_theta))
-
                 collapsed_Einv = csdl.reshape(Einv[:,:,i], new_shape=(3,3))
                 collapsed_Einv_1 = csdl.reshape(Einv[:,:,i+1], new_shape=(3,3))
                 collapsed_Mcsnp = csdl.reshape(Mcsnp[:,i], new_shape=(3))
                 collapsed_Mcsnp_1 = csdl.reshape(Mcsnp[:,i+1], new_shape=(3))
                 t_3 = 0.25 * csdl.matvec((collapsed_Einv + collapsed_Einv_1), (collapsed_Mcsnp + collapsed_Mcsnp_1)) * csdl.expand(delta_s[i],(3))
-
                 collapsed_damp_MK_1 = csdl.reshape(damp_MK[:,i+1], new_shape=(3))
                 collapsed_damp_MK = csdl.reshape(damp_MK[:,i], new_shape=(3))
                 inner_t4_term_1 = csdl.matvec(collapsed_Ka, (collapsed_damp_MK_1 - collapsed_damp_MK))
@@ -310,7 +307,7 @@ class ResJac(csdl.Model):
                 inner_t4_term_2 = 0.5*csdl.matvec((collapsed_K_1 - collapsed_K), (collapsed_damp_MK_1 + collapsed_damp_MK))
                 t_4 = csdl.matvec(damp, (inner_t4_term_1 + inner_t4_term_2))
 
-                Res[3:6,i+1] = csdl.expand(R_prec[3:6]*(t_1 - t_2 - t_3 + t_4), (3,1),'i->ijk')
+                Res[3:6,i+1] = csdl.expand(R_prec[3:6]*(t_1 - t_2 - t_3 + t_4), (3,1),'i->ij')
 
                 
                 # rows 6-8: force equilibrium (ASW, Eq. 56, page 13)
@@ -319,14 +316,24 @@ class ResJac(csdl.Model):
                 collapsed_f = csdl.reshape(f[:,i], new_shape=(3))
                 ex_delta_s = csdl.expand(delta_s[i], (3))
                 collapsed_delta_Fapplied = csdl.reshape(delta_Fapplied[:, i], new_shape=(3))
-                Res[6:9, i] = csdl.expand(R_prec[6:9]*(collapsed_F_1 - collapsed_F + (collapsed_f*ex_delta_s) + collapsed_delta_Fapplied), (3,1),'i->ijk')
+                Res[6:9,i] = csdl.expand(R_prec[6:9]*(collapsed_F_1 - collapsed_F + (collapsed_f*ex_delta_s) + collapsed_delta_Fapplied), (3,1),'i->ij')
                 
-                """
+                
                 # rows 9-11: moment equilibrium (ASW, Eq. 55, page 13)
-                Res[9:12, i] = R_prec[9:12] * (
-                        M[:, i + 1] - M[:, i] + m[:, i] * delta_s[i] + delta_Mapplied[:, i] + csdl.cross(delta_r[:, i],
-                                                                                                    Fav[:, i]))
-                
+                #Res[9:12,i] = R_prec[9:12] * (
+                #        M[:, i + 1] - M[:, i] + m[:, i] * delta_s[i] + delta_Mapplied[:, i] + csdl.cross(delta_r[:, i],
+                #                                                                                    Fav[:, i]))
+                collapsed_M = csdl.reshape(M[:,i], new_shape=(3))
+                collapsed_M_1 = csdl.reshape(M[:,i+1], new_shape=(3))
+                collapsed_m = csdl.reshape(m[:,i], new_shape=(3))
+                collapsed_delta_Mapplied = csdl.reshape(delta_Mapplied[:, i], new_shape=(3))
+                collapsed_delta_r = csdl.reshape(delta_r[:,i], new_shape=(3))
+                collapsed_Fav = csdl.reshape(Fav[:, i], new_shape=(3))
+                Res[9:12,i] = csdl.expand(R_prec[9:12]*(collapsed_M_1 - collapsed_M + collapsed_m*ex_delta_s + collapsed_delta_Mapplied + csdl.cross(collapsed_delta_r, collapsed_Fav, axis=0)), (3,1),'i->ij')
+
+
+
+                """
                 # Rows 12-14
                 Res[12:15, i] = (u[:, i] - rDot[:, i])
 
