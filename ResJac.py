@@ -321,8 +321,7 @@ class ResJac(csdl.Model):
                 
                 # rows 9-11: moment equilibrium (ASW, Eq. 55, page 13)
                 #Res[9:12,i] = R_prec[9:12] * (
-                #        M[:, i + 1] - M[:, i] + m[:, i] * delta_s[i] + delta_Mapplied[:, i] + csdl.cross(delta_r[:, i],
-                #                                                                                    Fav[:, i]))
+                #        M[:, i + 1] - M[:, i] + m[:, i] * delta_s[i] + delta_Mapplied[:, i] + csdl.cross(delta_r[:, i],Fav[:, i]))
                 collapsed_M = csdl.reshape(M[:,i], new_shape=(3))
                 collapsed_M_1 = csdl.reshape(M[:,i+1], new_shape=(3))
                 collapsed_m = csdl.reshape(m[:,i], new_shape=(3))
@@ -332,14 +331,17 @@ class ResJac(csdl.Model):
                 Res[9:12,i] = csdl.expand(R_prec[9:12]*(collapsed_M_1 - collapsed_M + collapsed_m*ex_delta_s + collapsed_delta_Mapplied + csdl.cross(collapsed_delta_r, collapsed_Fav, axis=0)), (3,1),'i->ij')
 
 
-
-                """
                 # Rows 12-14
-                Res[12:15, i] = (u[:, i] - rDot[:, i])
+                Res[12:15,i] = (u[:,i] - rDot[:, i])
+
 
                 # Rows 15-17 (UNS, Eq. 2, page 4);
-                Res[15:18, i] = (omega[:, i] - csdl.matmat(csdl.matmat(T[i][:, :].T, K[i][:, :]), thetaDot[:, i]))
+                #Res[15:18, i] = (omega[:, i] - mtimes(mtimes(T[i][:, :].T, K[i][:, :]), thetaDot[:, i]))
 
+                collapsed_T = csdl.reshape(T[:,:,i], new_shape=(3,3))
+                Res[15:18, i] = omega[:, i] - csdl.expand(csdl.matvec(csdl.matmat(csdl.transpose(collapsed_T), collapsed_K), csdl.reshape(thetaDot[:,i], new_shape=(3))), (3,1),'i->ij')
+
+"""
             else:
 
                 Res[12:15, i] = (u[:, i] - rDot[:, i])
