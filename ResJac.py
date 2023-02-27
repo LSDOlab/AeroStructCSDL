@@ -177,22 +177,28 @@ class ResJac(csdl.Model):
 
 
 
-        """
+        
         Mcsn = self.create_output('Mcsn',shape=(3,n))
         Fcsn = self.create_output('Fcsn',shape=(3,n))
         Mcsnp = self.create_output('Mcsnp',shape=(3,n))
         strainsCSN = self.create_output('strainsCSN',shape=(3,n))
         damp_MK = self.create_output('damp_MK',shape=(3,n))
 
-
+        
         for ind in range(0, n):
             # transform xyz -> csn (ASW, Eq. 14, page 6);
-            Mcsn[:, ind] = csdl.matmat(T[ind][:, :], M[:, ind])
-            Fcsn[:, ind] = csdl.matmat(T[ind][:, :], F[:, ind])
-
+            collapsed_T = csdl.reshape(T[:,:,ind],new_shape=(3,3))
+            collapsed_M = csdl.reshape(M[:,ind],new_shape=(3))
+            collapsed_F = csdl.reshape(F[:,ind],new_shape=(3))
+            Mcsn[:,ind] = csdl.expand(csdl.matvec(collapsed_T, collapsed_M),(3,1),'i->ij')
+            Fcsn[:,ind] = csdl.expand(csdl.matvec(collapsed_T, collapsed_F),(3,1),'i->ij')
+            
             # get Mcsn_prime (ASW, Eq. 18, page 8)
-            Mcsnp[:, ind] = Mcsn[:, ind] + csdl.matmat(csdl.transpose(D[ind][:, :]), Fcsn[:, ind])
+            mcsnp_t2 = csdl.matvec(csdl.transpose(csdl.reshape(D[:,:,ind], new_shape=(3,3))), csdl.reshape(Fcsn[:,ind], new_shape=(3)))
+            Mcsnp[:,ind] = Mcsn[:,ind] + csdl.expand(mcsnp_t2,(3,1),'i->ij')
 
+
+            """
             # get strains (ASW, Eq. 19, page 8)
             strainsCSN[:, ind] = csdl.matmat(oneover[ind][:, :], Fcsn[:, ind]) + csdl.matmat(D[ind][:, :], csdl.matmat(Einv[ind][:, :],
                                                                                                         Mcsnp[:, ind]))
