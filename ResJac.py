@@ -5,6 +5,7 @@ from calc_a_cg import calc_a_cg
 from CalcNodalT import CalcNodalT
 from CalcNodalK import CalcNodalK
 from calcT_ac import calcT_ac
+from inv import solver
 
 
 
@@ -183,6 +184,10 @@ class ResJac(csdl.Model):
         Mcsnp = self.create_output('Mcsnp',shape=(3,n))
         strainsCSN = self.create_output('strainsCSN',shape=(3,n))
         damp_MK = self.create_output('damp_MK',shape=(3,n))
+        
+        # compute K inverse for damp_MK computation
+        self.add(solver(num_nodes=n))
+        K_inv = self.declare_variable('K_inv',shape=(3,3,n))
 
         
         for ind in range(0, n):
@@ -211,18 +216,26 @@ class ResJac(csdl.Model):
 
             strainsCSN[:, ind] = csdl.expand(strainsCSN_t1 + strainsCSN_t2, (3,1),'i->ij')
             
-
-
-
-            """
             # get damping vector for moment-curvature relationship
-            damp_MK[:, ind] = csdl.matmat(inv(K[ind][:, :]), csdl.matmat(T[ind][:, :], omega[:, ind])) # inv ??????????????
+            # damp_MK[:, ind] = csdl.matmat(inv(K[ind][:, :]), csdl.matmat(T[ind][:, :], omega[:, ind]))
+
+            collapsed_K_inv = csdl.reshape(K_inv[:,:,ind], new_shape=(3,3))
+            collapsed_omega = csdl.reshape(omega[:,ind], new_shape=(3))
+            damp_MK_t2 = csdl.matvec(collapsed_T, collapsed_omega)
+
+            damp_MK[:, ind] = csdl.expand(csdl.matvec(collapsed_K_inv, damp_MK_t2), (3,1),'i->ij')
+
+
+
+
+        
 
         
         damp = self.create_output('damp',shape=(3,3),val=np.zeros((3,3)))
         damp[0, 0] = options['t_epsilon']
         damp[1, 1] = options['t_gamma']
         damp[2, 2] = options['t_epsilon']
+        """
         # get total distributed force
         f = f_aero + f_acc
         m = m_aero + m_acc
