@@ -198,11 +198,18 @@ class ResJac(csdl.Model):
             Mcsnp[:,ind] = Mcsn[:,ind] + csdl.expand(mcsnp_t2,(3,1),'i->ij')
 
 
-            """
+            
             # get strains (ASW, Eq. 19, page 8)
             strainsCSN[:, ind] = csdl.matmat(oneover[ind][:, :], Fcsn[:, ind]) + csdl.matmat(D[ind][:, :], csdl.matmat(Einv[ind][:, :],
                                                                                                         Mcsnp[:, ind]))
+            collapsed_oneover = csdl.reshape(oneover[:,:,ind],new_shape=(3,3))
+            collapsed_Fcsn = csdl.reshape(Fcsn[:,ind], new_shape=(3))
+            strainsCSN_t1 = csdl.matvec(collapsed_oneover, collapsed_Fcsn)
+            
 
+
+
+            """
             # get damping vector for moment-curvature relationship
             damp_MK[:, ind] = csdl.matmat(inv(K[ind][:, :]), csdl.matmat(T[ind][:, :], omega[:, ind])) # inv ??????????????
 
