@@ -79,8 +79,8 @@ class ResJac(csdl.Model):
         self.register_output('ALPHA0',ALPHA0)
         
         # forces and moments
-        f_aero = self.declare_variable('f_aero',shape=n,val=0)
-        m_aero = self.declare_variable('m_aero',shape=n,val=0)
+        f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=0)
+        m_aero = self.declare_variable('m_aero',shape=(3,n-1),val=0)
         delta_Fapplied = self.declare_variable('delta_Fapplied',shape=n,val=0)
         delta_Mapplied = self.declare_variable('delta_Mapplied',shape=n,val=0)
         
@@ -144,10 +144,9 @@ class ResJac(csdl.Model):
         
         for ind in range(0, n - 1):
             inner_term = csdl.expand(g_xyz,(3,1),'i->ij') - a_cg[:, ind]
-            f_acc[:, ind] = csdl.expand(csdl.matvec(inner_term,mu[ind]),(3,1),'i->ij') # I think this is right...
+            f_acc[:, ind] = csdl.expand(csdl.matvec(inner_term,mu[ind]),(3,1),'i->ij')
 
-            #TiT = csdl.matmat((0.5 * (csdl.transpose(T[ind][:, :]) + csdl.transpose(T[ind + 1][:, :]))),
-            #             csdl.matmat(i_matrix[ind][:, :], (0.5 * (T[ind][:, :] + T[ind + 1][:, :]))))
+
             collapsed_t_ind = csdl.reshape(T[:,:,ind], new_shape=(3,3))
             collapsed_t_ind_1 = csdl.reshape(T[:,:,ind+1], new_shape=(3,3))
             TiT_t_1 = 0.5 * (csdl.transpose(collapsed_t_ind) + csdl.transpose(collapsed_t_ind_1))
@@ -157,10 +156,7 @@ class ResJac(csdl.Model):
 
             TiT = csdl.matmat(TiT_t_1, TiT_t_2)
 
-            #m_acc[:, ind] = csdl.matmat(delta_rCG_tilde[ind][:, :], f_acc[:, ind]) - csdl.matmat(TiT, ALPHA0 + (
-            #        0.5 * (omegaDot[:, ind] + omegaDot[:, ind + 1]))) - csdl.cross(
-            #    (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1])),
-            #    csdl.matmat(TiT, (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1]))))
+
             collapsed_delta_rCG_tilde = csdl.reshape(delta_rCG_tilde[:,:,ind], new_shape=(3,3))
             collapsed_f_acc = csdl.reshape(f_acc[:, ind], new_shape=(3))
             m_t_1 = csdl.matvec(collapsed_delta_rCG_tilde, collapsed_f_acc)
@@ -203,8 +199,6 @@ class ResJac(csdl.Model):
             Mcsnp[:,ind] = Mcsn[:,ind] + csdl.expand(mcsnp_t2,(3,1),'i->ij')
 
             # get strains (ASW, Eq. 19, page 8)
-            #strainsCSN[:, ind] = csdl.matmat(oneover[ind][:, :], Fcsn[:, ind]) + csdl.matmat(D[ind][:, :], csdl.matmat(Einv[ind][:, :],
-            #                                                                                            Mcsnp[:, ind]))
             collapsed_oneover = csdl.reshape(oneover[:,:,ind],new_shape=(3,3))
             collapsed_Fcsn = csdl.reshape(Fcsn[:,ind], new_shape=(3))
             strainsCSN_t1 = csdl.matvec(collapsed_oneover, collapsed_Fcsn)
@@ -217,8 +211,6 @@ class ResJac(csdl.Model):
             strainsCSN[:, ind] = csdl.expand(strainsCSN_t1 + strainsCSN_t2, (3,1),'i->ij')
             
             # get damping vector for moment-curvature relationship
-            # damp_MK[:, ind] = csdl.matmat(inv(K[ind][:, :]), csdl.matmat(T[ind][:, :], omega[:, ind]))
-
             collapsed_K_inv = csdl.reshape(K_inv[:,:,ind], new_shape=(3,3))
             collapsed_omega = csdl.reshape(omega[:,ind], new_shape=(3))
             damp_MK_t2 = csdl.matvec(collapsed_T, collapsed_omega)
@@ -228,40 +220,40 @@ class ResJac(csdl.Model):
 
 
 
-        
-
-        
+        # convert options to csdl inputs for damp
+        t_epsilon = self.create_input('t_epsilon',shape=(1,1),val=options['t_epsilon'])
+        t_gamma = self.create_input('t_gamma',shape=(1,1),val=options['t_gamma'])
         damp = self.create_output('damp',shape=(3,3),val=np.zeros((3,3)))
-        damp[0, 0] = options['t_epsilon']
-        damp[1, 1] = options['t_gamma']
-        damp[2, 2] = options['t_epsilon']
-        """
+        damp[0, 0] = 1*t_epsilon
+        damp[1, 1] = 1*t_gamma
+        damp[2, 2] = 1*t_epsilon
+        
         # get total distributed force
         f = f_aero + f_acc
         m = m_aero + m_acc
-
+        
         # get average nodal reaction forces
         Fav = self.create_output('Fav',shape=(3,n-1))
 
         for i in range(0, n - 1):
-            Fav[:, i] = 0.5 * (F[:, i] + F[:, i + 1])
+            Fav[:, i] = 0.5*(F[:, i] + F[:, i + 1])
         # endsection
 
-
+        
         eps = 1e-19
         # get delta_s and delta_r
         delta_r = self.create_output('delta_r',shape=(3,n-1))
         delta_s = self.create_output('delta_s',shape=(3,n-1))
         for i in range(0,n-1):
             delta_r[:, i] = (r[:, i + 1] - r[:, i] + eps)  # added a non zero number to avoid the 1/sqrt(dx) singularity at the zero length nodes
-            delta_s[i] = ((delta_r[0, i])**2 + (delta_r[1, i])**2 + (delta_r[2, i])**2)**0.5  # based on ASW, Eq. 49, Page 12
+            delta_s[i] = csdl.reshape(((delta_r[0, i])**2 + (delta_r[1, i])**2 + (delta_r[2, i])**2)**0.5, new_shape=(1))  # based on ASW, Eq. 49, Page 12
 
 
-
+        
         # potential variables to be set as bc (can't create these vars in the for loop...)
         varRoot = self.create_output('vr',shape=(n,12,1),val=0)
         varTip = self.create_output('vt',shape=(n,12,1),val=0)
-        """
+        
         """
         # section residual
         for i in range(0, n):
