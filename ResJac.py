@@ -85,7 +85,7 @@ class ResJac(csdl.Model):
         # read the stick model
         mu = self.declare_variable('mu',shape=n)  # 1xn vector of mass/length
         theta0 = self.declare_variable('theta0',shape=n)
-        K0a = self.declare_variable('K0a',shape=n)
+        K0a = self.declare_variable('K0a',shape=(n,3,3))
         delta_s0 = self.declare_variable('delta_s0',shape=n)
         
         #i_matrix = self.create_output('i_matrix',shape=(3,3,n-1))
@@ -241,7 +241,7 @@ class ResJac(csdl.Model):
         eps = 1e-19
         # get delta_s and delta_r
         delta_r = self.create_output('delta_r',shape=(3,n-1))
-        delta_s = self.create_output('delta_s',shape=(3,n-1))
+        delta_s = self.create_output('delta_s',shape=(n-1))
         for i in range(0,n-1):
             delta_r[:, i] = (r[:, i + 1] - r[:, i] + eps)  # added a non zero number to avoid the 1/sqrt(dx) singularity at the zero length nodes
             delta_s[i] = csdl.reshape(((delta_r[0, i])**2 + (delta_r[1, i])**2 + (delta_r[2, i])**2)**0.5, new_shape=(1))  # based on ASW, Eq. 49, Page 12
@@ -249,9 +249,11 @@ class ResJac(csdl.Model):
 
         
         # potential variables to be set as bc (can't create these vars in the for loop...)
-        varRoot = self.create_output('vr',shape=(12,1,n),val=0)
-        varTip = self.create_output('vt',shape=(12,1,n),val=0)
+        #varRoot = self.create_output('vr',shape=(12,1,n),val=0)
+        #varTip = self.create_output('vt',shape=(12,1,n),val=0)
+        # also can't create s_vec in the loop
         s_vec = self.create_output('s_vec',shape=(3,1,n),val=np.zeros((3,1,n)))
+
         Res = self.create_output('Res',shape=(num_variables,n),val=0)
 
         one = self.declare_variable('one',val=1)
@@ -260,7 +262,6 @@ class ResJac(csdl.Model):
         for i in range(0, n):
             if i <= n - 2:
                 # rows 0-2: strain-displacement (ASW, Eq. 48, page 12)
-                # s_vec = SX.zeros(3, 1)
                 s_vec[1,0,i] = csdl.expand(one,(1,1,1),'i->ijk')
                 tempVector = csdl.reshape(csdl.reshape(s_vec[:,:,i], new_shape=(3,1)) + 0.5*(strainsCSN[:, i] + strainsCSN[:, i + 1]), new_shape=(3))
                 
@@ -281,15 +282,38 @@ class ResJac(csdl.Model):
                 Res[0:3,i+1] = csdl.expand(R_prec[0:3]*(collapsed_r_term - t1 + t2), (3,1),'i->ijk')
                 
                 
-                
-                """
                 # rows 3-5: moment-curvature relationship (ASW, Eq. 54, page 13)
-                Res[3:6, i + 1] = R_prec[3:6] * (csdl.matmat(Ka[i][:, :], (theta[:, i + 1] - theta[:, i])) - csdl.matmat(K0a[i, :, :], (
-                        theta0[:, i + 1] - theta0[:, i])) - 0.25 * csdl.matmat((Einv[i][:, :] + Einv[i + 1][:, :]), (
-                        Mcsnp[:, i] + Mcsnp[:, i + 1])) * delta_s[i] + csdl.matmat(damp, (
-                        csdl.matmat(Ka[i][:, :], (damp_MK[:, i + 1] - damp_MK[:, i])) + 0.5 * csdl.matmat((
-                        K[i + 1][:, :] - K[i][:, :]), (damp_MK[:, i + 1] + damp_MK[:, i])))))
+                #Res[3:6, i + 1] = R_prec[3:6] * (csdl.matmat(Ka[i][:, :], (theta[:, i + 1] - theta[:, i])) - csdl.matmat(K0a[i, :, :], (
+                #        theta0[:, i + 1] - theta0[:, i])) - 0.25 * csdl.matmat((Einv[i][:, :] + Einv[i + 1][:, :]), (
+                #        Mcsnp[:, i] + Mcsnp[:, i + 1])) * delta_s[i] + csdl.matmat(damp, (
+                #        csdl.matmat(Ka[i][:, :], (damp_MK[:, i + 1] - damp_MK[:, i])) + 0.5 * csdl.matmat((
+                #        K[i + 1][:, :] - K[i][:, :]), (damp_MK[:, i + 1] + damp_MK[:, i])))))
                 
+                collapsed_Ka = csdl.reshape(Ka[:,:,i], new_shape=(3,3))
+                collapsed_theta_1 = csdl.reshape(theta[:,i+1], new_shape=(3))
+                collapsed_theta = csdl.reshape(theta[:,i], new_shape=(3))
+                t_1 = csdl.matvec(collapsed_Ka, (collapsed_theta_1 - collapsed_theta))
+
+                collapsed_K0a = csdl.reshape(K0a[i,:,:], new_shape=(3,3))
+                t_2 = csdl.matvec(collapsed_K0a, (collapsed_theta_1 - collapsed_theta))
+
+                collapsed_Einv = csdl.reshape(Einv[:,:,i], new_shape=(3,3))
+                collapsed_Einv_1 = csdl.reshape(Einv[:,:,i+1], new_shape=(3,3))
+                collapsed_Mcsnp = csdl.reshape(Mcsnp[:,i], new_shape=(3))
+                collapsed_Mcsnp_1 = csdl.reshape(Mcsnp[:,i+1], new_shape=(3))
+                t_3 = 0.25 * csdl.matvec((collapsed_Einv + collapsed_Einv_1), (collapsed_Mcsnp + collapsed_Mcsnp_1)) * csdl.expand(delta_s[i],(3))
+
+                collapsed_damp_MK_1 = csdl.reshape(damp_MK[:,i+1], new_shape=(3))
+                collapsed_damp_MK = csdl.reshape(damp_MK[:,i], new_shape=(3))
+                inner_t4_term_1 = csdl.matvec(collapsed_Ka, (collapsed_damp_MK_1 - collapsed_damp_MK))
+                collapsed_K_1 = csdl.reshape(K[:,:,i+1], new_shape=(3,3))
+                collapsed_K = csdl.reshape(K[:,:,i], new_shape=(3,3))
+                inner_t4_term_2 = 0.5*csdl.matvec((collapsed_K_1 - collapsed_K), (collapsed_damp_MK_1 + collapsed_damp_MK))
+                t_4 = csdl.matvec(damp, (inner_t4_term_1 + inner_t4_term_2))
+
+                Res[3:6,i+1] = csdl.expand(R_prec[3:6]*(t_1 - t_2 - t_3 + t_4), (3,1),'i->ijk')
+
+                """
                 # rows 6-8: force equilibrium (ASW, Eq. 56, page 13)
                 Res[6:9, i] = R_prec[6:9] * (F[:, i + 1] - F[:, i] + csdl.matmat(f[:, i], delta_s[i]) + delta_Fapplied[:, i])
 
