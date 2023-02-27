@@ -197,14 +197,19 @@ class ResJac(csdl.Model):
             mcsnp_t2 = csdl.matvec(csdl.transpose(csdl.reshape(D[:,:,ind], new_shape=(3,3))), csdl.reshape(Fcsn[:,ind], new_shape=(3)))
             Mcsnp[:,ind] = Mcsn[:,ind] + csdl.expand(mcsnp_t2,(3,1),'i->ij')
 
-
-            
             # get strains (ASW, Eq. 19, page 8)
-            strainsCSN[:, ind] = csdl.matmat(oneover[ind][:, :], Fcsn[:, ind]) + csdl.matmat(D[ind][:, :], csdl.matmat(Einv[ind][:, :],
-                                                                                                        Mcsnp[:, ind]))
+            #strainsCSN[:, ind] = csdl.matmat(oneover[ind][:, :], Fcsn[:, ind]) + csdl.matmat(D[ind][:, :], csdl.matmat(Einv[ind][:, :],
+            #                                                                                            Mcsnp[:, ind]))
             collapsed_oneover = csdl.reshape(oneover[:,:,ind],new_shape=(3,3))
             collapsed_Fcsn = csdl.reshape(Fcsn[:,ind], new_shape=(3))
             strainsCSN_t1 = csdl.matvec(collapsed_oneover, collapsed_Fcsn)
+
+            collapsed_D = csdl.reshape(D[:,:,ind], new_shape=(3,3))
+            collapsed_Einv = csdl.reshape(Einv[:,:,ind], new_shape=(3,3))
+            collapsed_Mcsnp = csdl.reshape(Mcsnp[:,ind], new_shape=(3))
+            strainsCSN_t2 = csdl.matvec(collapsed_D, csdl.matvec(collapsed_Einv, collapsed_Mcsnp))
+
+            strainsCSN[:, ind] = csdl.expand(strainsCSN_t1 + strainsCSN_t2, (3,1),'i->ij')
             
 
 
