@@ -33,8 +33,6 @@ class ResJac(csdl.Model):
         xd = self.declare_variable('xd',shape=(num_variables,n)) # derivatives of state vector
         xac = self.declare_variable('xac',shape=(num_variables)) # aircraft state vector
         R_prec = self.declare_variable('R_prec',shape=(24))
-
-        # Res = self.create_output('Res',shape=(num_variables,n),val=0)
         
         # read x
         r = x[0:3, :]
@@ -251,25 +249,40 @@ class ResJac(csdl.Model):
 
         
         # potential variables to be set as bc (can't create these vars in the for loop...)
-        varRoot = self.create_output('vr',shape=(n,12,1),val=0)
-        varTip = self.create_output('vt',shape=(n,12,1),val=0)
+        varRoot = self.create_output('vr',shape=(12,1,n),val=0)
+        varTip = self.create_output('vt',shape=(12,1,n),val=0)
+        s_vec = self.create_output('s_vec',shape=(3,1,n),val=np.zeros((3,1,n)))
+        Res = self.create_output('Res',shape=(num_variables,n),val=0)
+
+        one = self.declare_variable('one',val=1)
         
-        """
         # section residual
         for i in range(0, n):
             if i <= n - 2:
                 # rows 0-2: strain-displacement (ASW, Eq. 48, page 12)
                 # s_vec = SX.zeros(3, 1)
-                s_vec = self.create_output('s_vec',shape=(3,1),val=np.zeros(3,1))
-                s_vec[1] = 1
-                tempVector = s_vec + 0.5*(strainsCSN[:, i] + strainsCSN[:, i + 1])
-
+                s_vec[1,0,i] = csdl.expand(one,(1,1,1),'i->ijk')
+                tempVector = csdl.reshape(csdl.reshape(s_vec[:,:,i], new_shape=(3,1)) + 0.5*(strainsCSN[:, i] + strainsCSN[:, i + 1]), new_shape=(3))
+                
                 # rows 0-3: ------------------Compatibility Equations------------------
-                Res[0:3, i + 1] = R_prec[0:3] * (
-                        r[:, i + 1] - r[:, i] - delta_s0[i] * csdl.matmat(Ta[i][:, :].T, tempVector) + csdl.matmat(
-                    damp, ((u[:, i + 1] - u[:, i]) - csdl.cross((0.5 * (omega[:, i + 1] + omega[:, i])),
-                                                           (r[:, i + 1] - r[:, i])))))
+                #Res[0:3, i + 1] = R_prec[0:3] * (
+                #        r[:, i + 1] - r[:, i] - delta_s0[i] * csdl.matmat(Ta[i][:, :].T, tempVector) + csdl.matmat(
+                #    damp, ((u[:, i + 1] - u[:, i]) - csdl.cross((0.5 * (omega[:, i + 1] + omega[:, i])),
+                #                                           (r[:, i + 1] - r[:, i])))))
+                collapsed_Ta = csdl.reshape(Ta[:,:,i], new_shape=(3,3))
+                t1 =  csdl.expand(delta_s0[i],(3)) * csdl.matvec(csdl.transpose(collapsed_Ta), tempVector)
+                collapsed_omega_i_1 = csdl.reshape(omega[:,i+1], new_shape=(3))
+                collapsed_omega_i = csdl.reshape(omega[:,i], new_shape=(3))
+                collapsed_r_term = csdl.reshape(r[:,i+1] - r[:,i], new_shape=(3))
+                collapsed_u_term = csdl.reshape(u[:,i+1] - u[:,i], new_shape=(3))
+                inner_t2 = collapsed_u_term - csdl.cross((0.5*(collapsed_omega_i_1 + collapsed_omega_i)), collapsed_r_term, axis=0)
+                t2 = csdl.matvec(damp, inner_t2)
 
+                Res[0:3,i+1] = csdl.expand(R_prec[0:3]*(collapsed_r_term - t1 + t2), (3,1),'i->ijk')
+                
+                
+                
+                """
                 # rows 3-5: moment-curvature relationship (ASW, Eq. 54, page 13)
                 Res[3:6, i + 1] = R_prec[3:6] * (csdl.matmat(Ka[i][:, :], (theta[:, i + 1] - theta[:, i])) - csdl.matmat(K0a[i, :, :], (
                         theta0[:, i + 1] - theta0[:, i])) - 0.25 * csdl.matmat((Einv[i][:, :] + Einv[i + 1][:, :]), (
