@@ -142,28 +142,41 @@ class ResJac(csdl.Model):
 
         
         for ind in range(0, n - 1):
-            inner_term = csdl.expand(g_xyz,(3,1),'i->ij') - a_cg[:, ind] # (3,1)
-            # f_acc[:, ind] = csdl.matmat(csdl.expand(mu[ind],(1,1)), inner_term)
+            inner_term = csdl.expand(g_xyz,(3,1),'i->ij') - a_cg[:, ind]
             f_acc[:, ind] = csdl.expand(csdl.matvec(inner_term,mu[ind]),(3,1),'i->ij') # I think this is right...
 
             #TiT = csdl.matmat((0.5 * (csdl.transpose(T[ind][:, :]) + csdl.transpose(T[ind + 1][:, :]))),
             #             csdl.matmat(i_matrix[ind][:, :], (0.5 * (T[ind][:, :] + T[ind + 1][:, :]))))
-
             collapsed_t_ind = csdl.reshape(T[:,:,ind], new_shape=(3,3))
             collapsed_t_ind_1 = csdl.reshape(T[:,:,ind+1], new_shape=(3,3))
-            t_1 = 0.5 * (csdl.transpose(collapsed_t_ind) + csdl.transpose(collapsed_t_ind_1))
+            TiT_t_1 = 0.5 * (csdl.transpose(collapsed_t_ind) + csdl.transpose(collapsed_t_ind_1))
             inner_term_1 = csdl.reshape(i_matrix[:,:,ind], new_shape=(3,3))
             inner_term_2 = csdl.reshape(0.5 * (T[:,:,ind] + T[:,:,ind+1]), new_shape=(3,3))
-            t_2 = csdl.matmat(inner_term_1, inner_term_2)
+            TiT_t_2 = csdl.matmat(inner_term_1, inner_term_2)
 
-            TiT = csdl.matmat(t_1, t_2)
-
+            TiT = csdl.matmat(TiT_t_1, TiT_t_2)
 
             #m_acc[:, ind] = csdl.matmat(delta_rCG_tilde[ind][:, :], f_acc[:, ind]) - csdl.matmat(TiT, ALPHA0 + (
             #        0.5 * (omegaDot[:, ind] + omegaDot[:, ind + 1]))) - csdl.cross(
             #    (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1])),
             #    csdl.matmat(TiT, (OMEGA + 0.5 * (omega[:, ind] + omega[:, ind + 1]))))
+            collapsed_delta_rCG_tilde = csdl.reshape(delta_rCG_tilde[:,:,ind], new_shape=(3,3))
+            collapsed_f_acc = csdl.reshape(f_acc[:, ind], new_shape=(3))
+            m_t_1 = csdl.matvec(collapsed_delta_rCG_tilde, collapsed_f_acc)
+
+            collapsed_omegaDot_ind = csdl.reshape(omegaDot[:,ind], new_shape=(3))
+            collapsed_omegaDot_ind_1 = csdl.reshape(omegaDot[:,ind+1], new_shape=(3))
+            inner_mt2_term2 = ALPHA0 + (0.5*(collapsed_omegaDot_ind + collapsed_omegaDot_ind_1))
+            m_t_2 = csdl.matvec(TiT, inner_mt2_term2)
             
+            cross_t1 = OMEGA + 0.5*(csdl.reshape(omega[:,ind], new_shape=(3)) + csdl.reshape(omega[:,ind+1], new_shape=(3)))
+            cross_t2 = csdl.matvec(TiT, (OMEGA + 0.5*(csdl.reshape(omega[:,ind], new_shape=(3)) + csdl.reshape(omega[:,ind+1], new_shape=(3)))))
+            m_t_3 = csdl.cross(cross_t1, cross_t2, axis=0)
+
+            m_acc[:, ind] = csdl.expand(m_t_1 - m_t_2 - m_t_3, (3,1),'i->ij')
+
+
+
         """
         Mcsn = self.create_output('Mcsn',shape=(3,n))
         Fcsn = self.create_output('Fcsn',shape=(3,n))
