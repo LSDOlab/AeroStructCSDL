@@ -73,8 +73,8 @@ class ResJac(csdl.Model):
         # forces and moments
         f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=0)
         m_aero = self.declare_variable('m_aero',shape=(3,n-1),val=0)
-        delta_Fapplied = self.declare_variable('delta_Fapplied',shape=(3,n),val=0)
-        delta_Mapplied = self.declare_variable('delta_Mapplied',shape=(3,n),val=0)
+        delta_Fapplied = self.declare_variable('delta_Fapplied',shape=(3,n-1),val=0)
+        delta_Mapplied = self.declare_variable('delta_Mapplied',shape=(3,n-1),val=0)
         
         # read the stick model
         mu = self.declare_variable('mu',shape=n)  # 1xn vector of mass/length
