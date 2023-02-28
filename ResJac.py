@@ -363,8 +363,6 @@ class ResJac(csdl.Model):
                 BCroot = bc['root']
                 BCtip = bc['tip']
                 # potential variables to be set as bc
-                # varRoot = SX.sym('vr', 12, 1)
-                # varTip = SX.sym('vt', 12, 1)
 
                 varRoot[0:3,i] = r[:, 0]
                 varRoot[3:6,i] = theta[:, 0]
@@ -376,13 +374,10 @@ class ResJac(csdl.Model):
                 varTip[6:9,i] = F[:, i]
                 varTip[9:12,i] = M[:, i]
 
-                
-
                 # indices that show which variables are to be set as bc (each will return 6 indices)
                 indicesRoot_ = (~(BCroot == 8888))
                 indicesTip_ = (~(BCtip == 8888))
                 
-
                 indicesRoot = []
                 indicesTip = []
                 
@@ -392,7 +387,6 @@ class ResJac(csdl.Model):
                     if indicesTip_[k]:
                         indicesTip.append(k)
                 
-                # root
                 # added csdl indexing code in a for loop...
                 for j in range(3):
                     vr_temp_03[j,i] = varRoot[indicesRoot[0:3][j],i]
@@ -405,13 +399,12 @@ class ResJac(csdl.Model):
                 collapsed_varTip_03 = csdl.reshape(vt_temp_03[:,i], new_shape=(3))
                 collapsed_varTip_36 = csdl.reshape(vt_temp_36[:,i], new_shape=(3))
                 
+                # root
                 Res[0:3, 0] = csdl.expand(R_prec[12:15]*(collapsed_varRoot_03 - BCroot[indicesRoot[0:3]]), (3,1),'i->ij')
-                
                 Res[3:6, 0] = csdl.expand(R_prec[15:18]*(collapsed_varRoot_36 - BCroot[indicesRoot[3:6]]), (3,1),'i->ij')
                 
                 # tip
                 Res[6:9, i] = csdl.expand(R_prec[18:21]*(collapsed_varTip_03 - BCtip[indicesTip[0:3]]), (3,1),'i->ij')
-                
                 Res[9:12, i] = csdl.expand(R_prec[21:24]*(collapsed_varTip_36 - BCtip[indicesTip[3:6]]), (3,1),'i->ij')
         
         # endsection
