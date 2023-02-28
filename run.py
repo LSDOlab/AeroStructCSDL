@@ -20,6 +20,7 @@ class run(csdl.Model):
 
 
 if __name__ == '__main__':
+    n = 16
 
     options = {}
     options['t_gamma'] = 0.03
@@ -27,10 +28,10 @@ if __name__ == '__main__':
     seq = np.array([3, 1, 2])
 
     bc = {}
-    bc['root'] = [0.0, 0.0, 0.0, 0.0, 0.0, -1.5707963267098655, 8888.0, 8888.0, 8888.0, 8888.0, 8888.0, 8888.0]
-    bc['tip'] = [8888.0, 8888.0, 8888.0, 8888.0, 8888.0, 8888.0, 0.0, 0.0, 1000.0, 0.0, 0.0, 0.0]
+    bc['root'] = np.array([0.0, 0.0, 0.0, 0.0, 0.0, -1.5707963267098655, 8888.0, 8888.0, 8888.0, 8888.0, 8888.0, 8888.0])
+    bc['tip'] = np.array([8888.0, 8888.0, 8888.0, 8888.0, 8888.0, 8888.0, 0.0, 0.0, 1000.0, 0.0, 0.0, 0.0])
     
 
     # run model
-    sim = python_csdl_backend.Simulator(run(num_nodes=10,options=options,seq=seq,bc=bc))
+    sim = python_csdl_backend.Simulator(run(num_nodes=n,options=options,seq=seq,bc=bc))
     sim.run()
