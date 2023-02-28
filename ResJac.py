@@ -370,19 +370,25 @@ class ResJac(csdl.Model):
                 varTip[6:9,i] = F[:, i]
                 varTip[9:12,i] = M[:, i]
 
-                """
+                
 
                 # indices that show which variables are to be set as bc (each will return 6 indices)
-                indicesRoot_ = (~(BCroot == 8888))
+                indicesRoot_ = (~(BCroot == 8888.0))
                 indicesTip_ = (~(BCtip == 8888))
+
+                print(BCroot)
+                print(indicesRoot_)
+                
 
                 indicesRoot = []
                 indicesTip = []
+                
                 for k in range(0, len(indicesRoot_)):
                     if indicesRoot_[k]:
                         indicesRoot.append(k)
                     if indicesTip_[k]:
                         indicesTip.append(k)
+                """
                 # root
                 Res[0:3, 0] = R_prec[12:15]*(varRoot[i,indicesRoot[0:3]] - BCroot[indicesRoot[0:3]])
                 Res[3:6, 0] = R_prec[15:18]*(varRoot[i,indicesRoot[3:6]] - BCroot[indicesRoot[3:6]])
