@@ -50,4 +50,4 @@ if __name__ == '__main__':
     sim.run()
 
     print(sim['x'])
-    print(sim['Res'])
+    # print(sim['reshaped_res'])

@@ -405,4 +405,5 @@ class ResJac(csdl.Model):
         
         # endsection
         # return reshape(Res, (18 * n, 1))
-        # reshaped_res = csdl.reshape(Res)
+        reshaped_res = csdl.reshape(Res,new_shape=(18*n))
+        self.register_output('reshaped_res',reshaped_res)
