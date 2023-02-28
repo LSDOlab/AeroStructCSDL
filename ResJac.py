@@ -16,7 +16,7 @@ class ResJac(csdl.Model):
         self.parameters.declare('num_variables',default=18)
         self.parameters.declare('bc')
         self.parameters.declare('element',default=0)
-        self.parameters.declare('g',default=np.array([0,0,9.81]))
+        #self.parameters.declare('g',default=np.array([0,0,9.81]))
         self.parameters.declare('options')
         self.parameters.declare('seq')
     def define(self):
@@ -24,8 +24,9 @@ class ResJac(csdl.Model):
         num_variables = self.parameters['num_variables']
         bc = self.parameters['bc'] # boundary conditions
         element = self.parameters['element']
-        gravity = self.parameters['g'] # gravity
-        g = self.create_input('g',val=gravity,shape=(3))
+        #gravity = self.parameters['g'] # gravity
+        # g = self.create_input('g',val=gravity,shape=(3))
+        g = self.declare_variable('g',shape=(3),val=np.array([0,0,9.81]))
         options = self.parameters['options'] # options dictionary
         seq = self.parameters['seq']
 
@@ -218,9 +219,9 @@ class ResJac(csdl.Model):
 
 
 
-        # convert options to csdl inputs for damp
-        t_epsilon = self.create_input('t_epsilon',shape=(1,1),val=options['t_epsilon'])
-        t_gamma = self.create_input('t_gamma',shape=(1,1),val=options['t_gamma'])
+        # convert options
+        t_epsilon = self.declare_variable('t_epsilon',shape=(1,1))
+        t_gamma = self.declare_variable('t_gamma',shape=(1,1))
         damp = self.create_output('damp',shape=(3,3),val=np.zeros((3,3)))
         damp[0, 0] = 1*t_epsilon
         damp[1, 1] = 1*t_gamma

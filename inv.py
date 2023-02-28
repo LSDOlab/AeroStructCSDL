@@ -11,7 +11,7 @@ class inv(csdl.Model):
 
         K = self.declare_variable('K',shape=(3,3,n))
         K_inv = self.declare_variable('K_inv',shape=(3,3,n))
-        eye = self.declare_variable('eye',shape=(3,3))
+        eye = self.declare_variable('eye',shape=(3,3),val=np.eye(3))
         residual = self.create_output('residual',shape=(3,3,n))
         
         for i in range(0,n):
@@ -28,8 +28,6 @@ class solver(csdl.Model):
     def define(self):
         n = self.parameters['num_nodes']
 
-        eye = self.create_input('eye',shape=(3,3),val=np.eye(3))
-
         solve_inv = self.create_implicit_operation(inv(num_nodes=n))
         solve_inv.declare_state('K_inv', residual='residual')
         solve_inv.nonlinear_solver = csdl.NewtonSolver(
@@ -41,7 +39,7 @@ class solver(csdl.Model):
 
 
         K = self.declare_variable('K',shape=(3,3,n))
-        K_inv = solve_inv(K,eye)
+        K_inv = solve_inv(K)
 
 
 
