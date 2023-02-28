@@ -20,6 +20,8 @@ class implicit_op(csdl.Model):
         t_epsilon = self.create_input('t_epsilon',shape=(1,1),val=options['t_epsilon'])
         t_gamma = self.create_input('t_gamma',shape=(1,1),val=options['t_gamma'])
 
+        xac = self.create_input('xac',shape=(18),val=np.zeros(18))
+
         solve_res = self.create_implicit_operation(ResJac(num_nodes=n,seq=seq,bc=bc))
         solve_res.declare_state('x', residual='Res')
         solve_res.nonlinear_solver = csdl.NewtonSolver(
@@ -36,6 +38,13 @@ class implicit_op(csdl.Model):
 
 if __name__ == '__main__':
     n = 16
+    L = 10
+    beam_points = np.zeros((3,n))
+    beam_points[0,:] = np.linspace(0,L,n)
+
+
+
+
 
     options = {}
     options['t_gamma'] = 0.03
@@ -50,4 +59,3 @@ if __name__ == '__main__':
     sim.run()
 
     print(sim['x'])
-    # print(sim['reshaped_res'])

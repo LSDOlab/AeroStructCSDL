@@ -15,13 +15,11 @@ class ResJac(csdl.Model):
         self.parameters.declare('num_nodes')
         self.parameters.declare('num_variables',default=18)
         self.parameters.declare('bc')
-        self.parameters.declare('element',default=0)
         self.parameters.declare('seq')
     def define(self):
         n = self.parameters['num_nodes']
         num_variables = self.parameters['num_variables']
         bc = self.parameters['bc'] # boundary conditions
-        element = self.parameters['element']
         g = self.declare_variable('g',shape=(3),val=np.array([0,0,9.81]))
         seq = self.parameters['seq']
 
@@ -254,7 +252,7 @@ class ResJac(csdl.Model):
 
         one = self.declare_variable('one',val=1)
 
-        # dummy vars
+        # dummy vars for csdl implementation
         vr_temp_03 = self.create_output('vr_temp_03',shape=(3,n))
         vr_temp_36 = self.create_output('vr_temp_36',shape=(3,n))
         vt_temp_03 = self.create_output('vt_temp_03',shape=(3,n))
