@@ -4,7 +4,7 @@ import python_csdl_backend
 from ResJac import ResJac
 
 
-class res_solver(csdl.Model):
+class implicit_op(csdl.Model):
     def initialize(self):
         self.parameters.declare('num_nodes')
         self.parameters.declare('options')
@@ -20,7 +20,7 @@ class res_solver(csdl.Model):
         t_epsilon = self.create_input('t_epsilon',shape=(1,1),val=options['t_epsilon'])
         t_gamma = self.create_input('t_gamma',shape=(1,1),val=options['t_gamma'])
 
-        solve_res = self.create_implicit_operation(ResJac(num_nodes=n,options=options,seq=seq,bc=bc))
+        solve_res = self.create_implicit_operation(ResJac(num_nodes=n,seq=seq,bc=bc))
         solve_res.declare_state('x', residual='Res')
         solve_res.nonlinear_solver = csdl.NewtonSolver(
         solve_subsystems=False,
@@ -29,7 +29,6 @@ class res_solver(csdl.Model):
         )
         solve_res.linear_solver = csdl.ScipyKrylov()
 
-        #x = self.declare_variable('x',shape=(18,n))
         ans = solve_res()
 
 
@@ -47,9 +46,8 @@ if __name__ == '__main__':
     bc['root'] = np.array([0.0, 0.0, 0.0, 0.0, 0.0, -1.5707963267098655, 8888.0, 8888.0, 8888.0, 8888.0, 8888.0, 8888.0])
     bc['tip'] = np.array([8888.0, 8888.0, 8888.0, 8888.0, 8888.0, 8888.0, 0.0, 0.0, 1000.0, 0.0, 0.0, 0.0])
 
-    sim = python_csdl_backend.Simulator(res_solver(num_nodes=n,options=options,seq=seq,bc=bc))
-    # sim['K'] = np.random.rand(3,3,n)
+    sim = python_csdl_backend.Simulator(implicit_op(num_nodes=n,options=options,seq=seq,bc=bc))
     sim.run()
 
-    # print partials
-    # sim.check_partials(compact_print=True)
+    print(sim['x'])
+    print(sim['Res'])

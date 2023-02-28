@@ -16,21 +16,16 @@ class ResJac(csdl.Model):
         self.parameters.declare('num_variables',default=18)
         self.parameters.declare('bc')
         self.parameters.declare('element',default=0)
-        #self.parameters.declare('g',default=np.array([0,0,9.81]))
-        self.parameters.declare('options')
         self.parameters.declare('seq')
     def define(self):
         n = self.parameters['num_nodes']
         num_variables = self.parameters['num_variables']
         bc = self.parameters['bc'] # boundary conditions
         element = self.parameters['element']
-        #gravity = self.parameters['g'] # gravity
-        # g = self.create_input('g',val=gravity,shape=(3))
         g = self.declare_variable('g',shape=(3),val=np.array([0,0,9.81]))
-        options = self.parameters['options'] # options dictionary
         seq = self.parameters['seq']
 
-        x = self.declare_variable('x',shape=(num_variables,n)) # state vector
+        x = self.declare_variable('x',shape=(num_variables,n)) # state vector (18,n)
         xd = self.declare_variable('xd',shape=(num_variables,n)) # derivatives of state vector
         xac = self.declare_variable('xac',shape=(num_variables)) # aircraft state vector
         R_prec = self.declare_variable('R_prec',shape=(24))
@@ -85,7 +80,7 @@ class ResJac(csdl.Model):
         
         # read the stick model
         mu = self.declare_variable('mu',shape=n)  # 1xn vector of mass/length
-        theta0 = self.declare_variable('theta0',shape=n)
+        theta0 = self.declare_variable('theta0',shape=n,val=0)
         K0a = self.declare_variable('K0a',shape=(n,3,3))
         delta_s0 = self.declare_variable('delta_s0',shape=n)
         
@@ -410,3 +405,4 @@ class ResJac(csdl.Model):
         
         # endsection
         # return reshape(Res, (18 * n, 1))
+        # reshaped_res = csdl.reshape(Res)
