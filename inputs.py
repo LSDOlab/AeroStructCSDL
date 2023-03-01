@@ -1,6 +1,9 @@
 import csdl
 import python_csdl_backend
 import numpy as np
+from BoxBeamRep import *
+
+
 
 class inputs(csdl.Model):
     def initialize(self):
