@@ -131,7 +131,6 @@ class ResJac(csdl.Model):
             inner_term = csdl.expand(g_xyz,(3,1),'i->ij') - a_cg[:, ind]
             f_acc[:, ind] = csdl.expand(csdl.matvec(inner_term,mu[ind]),(3,1),'i->ij')
 
-
             collapsed_t_ind = csdl.reshape(T[:,:,ind], new_shape=(3,3))
             collapsed_t_ind_1 = csdl.reshape(T[:,:,ind+1], new_shape=(3,3))
             TiT_t_1 = 0.5 * (csdl.transpose(collapsed_t_ind) + csdl.transpose(collapsed_t_ind_1))
