@@ -8,120 +8,13 @@ seq = np.array([3, 1, 2]) # fuselage beam
 n = 16
 
 
-
-
-"""
-if np.array_equal(seq, np.array([3, 1, 2])):  # fuselage beam
-    span_var = 0
-else:
-    span_var = 1
-
-# Design Variables
-cs = SX.sym(self.options['name'] + 'cs', 6 * n_dvcs)
-self.symbolic_expressions['cs'] = cs
-
-# isolate important variables from cs
-h_seed = cs[0:n_dvcs]
-w_seed = cs[n_dvcs:2 * n_dvcs]
-t_left_seed = cs[2 * n_dvcs:3 * n_dvcs]
-t_top_seed = cs[3 * n_dvcs:4 * n_dvcs]
-t_right_seed = cs[4 * n_dvcs:5 * n_dvcs]
-t_bot_seed = cs[5 * n_dvcs:6 * n_dvcs]
-
-# construct the augmented set
-h = SX.zeros(n, 1)
-w = SX.zeros(n, 1)
-t_left = SX.zeros(n, 1)
-t_top = SX.zeros(n, 1)
-t_right = SX.zeros(n, 1)
-t_bot = SX.zeros(n, 1)
-
-        # Lay up the augmented section set with the available cross-section information:
-        J = 0
-        for i in range(0, n):
-            if self.options['section_characteristics'][i] == SectionType.CS:
-                h[i] = h_seed[J]
-                w[i] = w_seed[J]
-                t_left[i] = t_left_seed[J]
-                t_top[i] = t_top_seed[J]
-                t_right[i] = t_right_seed[J]
-                t_bot[i] = t_bot_seed[J]
-                J += 1
-            else:
-                if i == n - 1 or J == n_dvcs:  # Last element
-                    h[i] = h_seed[-1]
-                    w[i] = w_seed[-1]
-                    t_left[i] = t_left_seed[-1]
-                    t_top[i] = t_top_seed[-1]
-                    t_right[i] = t_right_seed[-1]
-                    t_bot[i] = t_bot_seed[-1]
-                else:
-                    h_prev = h_seed[J-1]
-                    w_prev = w_seed[J-1]
-                    t_left_prev = t_left_seed[J-1]
-                    t_top_prev = t_top_seed[J-1]
-                    t_right_prev = t_right_seed[J-1]
-                    t_bot_prev = t_bot_seed[J-1]
-
-                    h_next = h_seed[J]
-                    w_next = w_seed[J]
-                    t_left_next = t_left_seed[J]
-                    t_top_next = t_top_seed[J]
-                    t_right_next = t_right_seed[J]
-                    t_bot_next = t_bot_seed[J]
-
-                    y_prev = cs_r0[span_var, J - 1]
-                    y_current = r0[span_var, i]
-                    y_next = cs_r0[span_var, J]
-
-                    h[i] = h_next * (y_current - y_prev) / (y_next - y_prev) + h_prev * (
-                                1 - (y_current - y_prev) / (y_next - y_prev))
-                    w[i] = w_next * (y_current - y_prev) / (y_next - y_prev) + w_prev * (
-                                1 - (y_current - y_prev) / (y_next - y_prev))
-
-                    t_left[i] = t_left_next * (y_current - y_prev) / (y_next - y_prev) + t_left_prev * (
-                            1 - (y_current - y_prev) / (y_next - y_prev))
-                    t_top[i] = t_top_next * (y_current - y_prev) / (y_next - y_prev) + t_top_prev * (
-                            1 - (y_current - y_prev) / (y_next - y_prev))
-
-                    t_right[i] = t_right_next * (y_current - y_prev) / (y_next - y_prev) + t_right_prev * (
-                            1 - (y_current - y_prev) / (y_next - y_prev))
-                    t_bot[i] = t_bot_next * (y_current - y_prev) / (y_next - y_prev) + t_bot_prev * (
-                            1 - (y_current - y_prev) / (y_next - y_prev))
-                    pass
-
-"""
-
-
-
-
-
-
-# cs params
+# cs params (all vectors of length n)
 h = 
 w = 
 t_left = 
 t_top = 
 t_right = 
 t_bot = 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -264,3 +157,45 @@ Q_max_x = h * t_left * (w / 2 - e_cg_x - t_left / 2) + \
             0.5 * t_top * (w / 2 - t_left - e_cg_x) ** 2 + \
             0.5 * t_bot * (w / 2 - t_left - e_cg_x) ** 2
 # endregion
+
+
+
+
+D = np.zeros((3,3,n))
+for i in range(n):
+    D[i][0, 0] = 0
+    D[i][0, 1] = -n_ea[i]
+    D[i][0, 2] = 0
+    D[i][1, 0] = n_ta[0]
+    D[i][1, 1] = 0
+    D[i][1, 2] = -c_ta[0]
+    D[i][2, 0] = 0
+    D[i][2, 1] = c_ea[0]
+    D[i][2, 2] = 0
+
+
+
+oneover = np.zeros((3,3,n))
+for i in range(n):
+    oneover[i][0, 0] = 1 / GKc[i]
+    oneover[i][0, 1] = 0
+    oneover[i][0, 2] = 0
+    oneover[i][1, 0] = 0
+    oneover[i][1, 1] = 1 / EA[i]
+    oneover[i][1, 2] = 0
+    oneover[i][2, 0] = 0
+    oneover[i][2, 1] = 0
+    oneover[i][2, 2] = 1 / GKn[i]
+
+
+i_matrix = SX.sym(self.options['name'] + 'i_matrix', 3, 3, n - 1)
+        for i in range(n - 1):
+            i_matrix[i][0, 0] = mu[i]
+            i_matrix[i][0, 1] = 0
+            i_matrix[i][0, 2] = 0
+            i_matrix[i][1, 0] = 0
+            i_matrix[i][1, 1] = mu[i]
+            i_matrix[i][1, 2] = 0
+            i_matrix[i][2, 0] = 0
+            i_matrix[i][2, 1] = 0
+            i_matrix[i][2, 2] = mu[i]
