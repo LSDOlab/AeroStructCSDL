@@ -24,3 +24,5 @@ class inputs(csdl.Model):
         self.create_input('i_matrix',shape=(3,3,n-1),val=i_matrix)
         self.create_input('oneover',shape=(3,3,n),val=oneover)
         self.create_input('D',shape=(3,3,n),val=D)
+        self.create_input('mu',shape=(n-1),val=mu)
+        self.create_input('K0a',shape=(n-1,3,3),val=K0a)

@@ -23,10 +23,10 @@ class ResJac(csdl.Model):
         g = self.declare_variable('g',shape=(3),val=np.array([0,0,9.81]))
         seq = self.parameters['seq']
 
-        x = self.declare_variable('x',shape=(num_variables,n)) # state vector (18,n)
-        xd = self.declare_variable('xd',shape=(num_variables,n)) # derivatives of state vector
-        xac = self.declare_variable('xac',shape=(num_variables)) # aircraft state vector
-        R_prec = self.declare_variable('R_prec',shape=(24))
+        x = self.declare_variable('x',shape=(num_variables,n),val=0.5) # state vector (18,n)
+        xd = self.declare_variable('xd',shape=(num_variables,n),val=0) # derivatives of state vector
+        xac = self.declare_variable('xac',shape=(num_variables),val=0) # aircraft state vector
+        R_prec = self.declare_variable('R_prec',shape=(24),val=1)
         
         # read x
         r = x[0:3, :]
@@ -58,7 +58,6 @@ class ResJac(csdl.Model):
         
         # read the aircraft states
         R = xac[0:3]
-        # self.register_output('R',R) # duplicate R variable output?
         U = xac[3:6]
         self.register_output('U',U)
         A0 = xac[6:9]
@@ -77,17 +76,11 @@ class ResJac(csdl.Model):
         delta_Mapplied = self.declare_variable('delta_Mapplied',shape=(3,n-1),val=0)
         
         # read the stick model
-        mu = self.declare_variable('mu',shape=n)  # 1xn vector of mass/length
+        mu = self.declare_variable('mu',shape=(n-1))  # 1xn-1 vector of mass/length
         theta0 = self.declare_variable('theta0',shape=n,val=0)
-        K0a = self.declare_variable('K0a',shape=(n,3,3))
+        K0a = self.declare_variable('K0a',shape=(n-1,3,3),val=0)
         delta_s0 = self.declare_variable('delta_s0',shape=n)
         
-        #i_matrix = self.create_output('i_matrix',shape=(3,3,n-1))
-        #delta_rCG_tilde = self.create_output('delta_rCG_tilde',shape=(3,3,n-1))
-        #Einv = self.create_output('Einv',shape=(3,3,n))
-        #D = self.create_output('D',shape=(3,3,n))
-        #oneover = self.create_output('oneover',shape=(3,3,n))
-
         i_matrix = self.declare_variable('i_matrix',shape=(3,3,n-1))
         delta_rCG_tilde = self.declare_variable('delta_rCG_tilde',shape=(3,3,n-1))
         Einv = self.declare_variable('Einv',shape=(3,3,n))

@@ -236,3 +236,28 @@ for i in range(n):
     Emat[2,2,i] = EIzz[i]
 
     Einv[:,:,i] = np.linalg.inv(Emat[:,:,i])
+
+
+
+
+
+# K0a
+th0 = np.zeros((3,n))
+K0a = np.zeros((n - 1, 3, 3))
+K = np.zeros((n, 3, 3))
+for i in range(n):
+    if (seq == np.array([3,1,2])).all():  # (fuselage) seq=312
+        K[i, :, :] = np.asarray([[np.cos(th0[1, i]),0,-np.cos(th0[0, i])*np.sin(th0[1, i])],
+            [0,1,np.sin(th0[0, i])],
+            [np.sin(th0[1, i]),
+             0, np.cos(th0[0, i])*np.cos(th0[1, i])]])
+        if i >= 1:
+            K0a[i - 1, :, :] = (K[i, :, :] + K[i - 1, :, :]) / 2
+    elif (seq == np.array([132])).all():  # (wing) seq=132
+        K[i, :, :] = np.array([[np.cos(th0[2, i])*np.cos(th0[1, i]),0,-np.sin(th0[1, i])],
+                    [-np.sin(th0[2, i]),1,0],
+                    [np.cos(th0[2, i])*np.sin(th0[1, i]),0,np.cos(th0[1, i])]])
+        if i >= 1:
+            K0a[i - 1, :, :] = (K[i, :, :] + K[i - 1, :, :]) / 2
+    else:
+        raise IOError
