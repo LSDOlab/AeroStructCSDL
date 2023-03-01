@@ -9,8 +9,8 @@ rho = 2700
 seq = np.array([3, 1, 2]) # fuselage beam
 
 # cs params (all vectors of length n)
-h = 4*np.ones((n))
-w = 12*np.ones((n))
+h = 0.5*np.ones((n))
+w = 3*np.ones((n))
 t_left = 0.1*np.ones((n))
 t_top = 0.1*np.ones((n))
 t_right = 0.1*np.ones((n))
@@ -242,7 +242,7 @@ for i in range(n):
 
 
 # K0a
-th0 = np.zeros((3,n))
+th0 = np.ones((3,n))*1 # initial lengths?
 K0a = np.zeros((n - 1, 3, 3))
 K = np.zeros((n, 3, 3))
 for i in range(n):

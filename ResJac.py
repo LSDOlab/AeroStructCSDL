@@ -70,7 +70,7 @@ class ResJac(csdl.Model):
         self.register_output('ALPHA0',ALPHA0)
         
         # forces and moments
-        f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=0)
+        f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=1E2)
         m_aero = self.declare_variable('m_aero',shape=(3,n-1),val=0)
         delta_Fapplied = self.declare_variable('delta_Fapplied',shape=(3,n-1),val=0)
         delta_Mapplied = self.declare_variable('delta_Mapplied',shape=(3,n-1),val=0)
@@ -395,6 +395,5 @@ class ResJac(csdl.Model):
                 Res[9:12, i] = csdl.expand(R_prec[21:24]*(collapsed_varTip_36 - BCtip[indicesTip[3:6]]), (3,1),'i->ij')
         
         # endsection
-        # return reshape(Res, (18 * n, 1))
-        reshaped_res = csdl.reshape(Res,new_shape=(18*n))
-        self.register_output('reshaped_res',reshaped_res)
+        residual = csdl.reshape(Res,new_shape=(18*n))
+        self.register_output('residual',residual)

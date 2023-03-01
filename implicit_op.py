@@ -33,9 +33,6 @@ class implicit_op(csdl.Model):
 
 if __name__ == '__main__':
     n = 16
-    L = 10
-    beam_points = np.zeros((3,n))
-    beam_points[0,:] = np.linspace(0,L,n)
     seq = np.array([3, 1, 2])
 
     bc = {}
