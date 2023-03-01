@@ -242,7 +242,7 @@ for i in range(n):
 
 
 # K0a
-th0 = np.ones((3,n))*1 # initial lengths?
+th0 = np.ones((3,n))*1
 K0a = np.zeros((n - 1, 3, 3))
 K = np.zeros((n, 3, 3))
 for i in range(n):

@@ -15,7 +15,7 @@ class implicit_op(csdl.Model):
         seq = self.parameters['seq']
         bc = self.parameters['bc']
 
-        self.add(inputs(num_nodes=n,num_variables=18),name='inputs')
+        self.add(inputs(num_nodes=n),name='inputs')
 
         solve_res = self.create_implicit_operation(ResJac(num_nodes=n,seq=seq,bc=bc))
         solve_res.declare_state('x', residual='Res')

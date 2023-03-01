@@ -6,10 +6,8 @@ import numpy as np
 
 class calcT_ac(csdl.Model):
     def initialize(self):
-        # self.parameters.declare('num_nodes')
         pass
     def define(self):
-        # n = self.parameters['num_nodes']
         TH = self.declare_variable('THETA',shape=(3))
 
         # rotation matrix (3x3) that rotates a vector in xyz to XYZ as follows:
@@ -59,7 +57,6 @@ class calcT_ac(csdl.Model):
         
         # calculate rotation matrix
         # T_E = mtimes(R_psi, mtimes(R_th, R_phi))
-        
         inner_term = csdl.matmat(R_th,R_phi)
         T_E = csdl.matmat(R_psi, inner_term)
         self.register_output('T_E',T_E)

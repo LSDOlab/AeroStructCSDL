@@ -23,87 +23,68 @@ class ResJac(csdl.Model):
         g = self.declare_variable('g',shape=(3),val=np.array([0,0,9.81]))
         seq = self.parameters['seq']
 
-        x = self.declare_variable('x',shape=(num_variables,n)) # state vector (18,n)
-        xd = self.declare_variable('xd',shape=(num_variables,n)) # derivatives of state vector
-        xac = self.declare_variable('xac',shape=(num_variables)) # aircraft state vector
-        R_prec = self.declare_variable('R_prec',shape=(24),val=1)
+        x = self.declare_variable('x',shape=(num_variables,n)) # state vector
+        xd = self.declare_variable('xd',shape=(num_variables,n),val=0) # time derivatives of state vector
+        xac = self.declare_variable('xac',shape=(num_variables),val=0) # aircraft state vector
+        R_prec = self.declare_variable('R_prec',shape=(24),val=0) # numerical scaling
         
         # read x
-        r = x[0:3, :]
+        r = x[0:3, :] # nodal positions (x,y,z)# y
         self.register_output('r',r)
-        theta = x[3:6, :]
+        theta = x[3:6, :] # nodal orientations
         self.register_output('theta',theta)
-        F = x[6:9, :]
+        F = x[6:9, :] # nodal beam-stres forces
         self.register_output('F',F)
-        M = x[9:12, :]
+        M = x[9:12, :] # nodal beam stress moments
         self.register_output('M',M)
-        u = x[12:15, :]
+        u = x[12:15, :] # nodal velocities (x,y,z)# y
         self.register_output('u',u)
-        omega = x[15:18, :]
+        omega = x[15:18, :] # nodal rotations
         self.register_output('omega',omega)
 
-        # read xDot
+        # read xDot (time derivatives)
         rDot = xd[0:3, :]
         self.register_output('rDot',rDot)
         thetaDot = xd[3:6, :]
-        self.register_output('thetaDot',thetaDot)
+        #self.register_output('thetaDot',thetaDot)
         FDot = xd[6:9, :]
         self.register_output('FDot',FDot)
         MDot = xd[9:12, :]
         self.register_output('MDot',MDot)
         uDot = xd[12:15, :]
-        self.register_output('uDot',uDot)
+        self.register_output('uDot',uDot) # y
         omegaDot = xd[15:18, :]
         self.register_output('omegaDot',omegaDot)
         
         # read the aircraft states
-        R = xac[0:3]
-        U = xac[3:6]
-        self.register_output('U',U)
+        # R = xac[0:3] # aircraft position (X,Y,Z)
+        # U = xac[3:6] # aircraft velocity
+        # self.register_output('U',U)
         A0 = xac[6:9]
-        self.register_output('A0',A0)
+        self.register_output('A0',A0)# y
         THETA = xac[9:12]
         self.register_output('THETA',THETA)
         OMEGA = xac[12:15]
-        self.register_output('OMEGA',OMEGA)
+        self.register_output('OMEGA',OMEGA)# y
         ALPHA0 = xac[15:18]
-        self.register_output('ALPHA0',ALPHA0)
+        self.register_output('ALPHA0',ALPHA0)# y
         
         # forces and moments
-        f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=1E2) # distributed aero forces
+        f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=0) # distributed aero forces
         m_aero = self.declare_variable('m_aero',shape=(3,n-1),val=0) # distributed aero moments
         delta_Fapplied = self.declare_variable('delta_Fapplied',shape=(3,n-1),val=0) # point loads
         delta_Mapplied = self.declare_variable('delta_Mapplied',shape=(3,n-1),val=0) # point moments
         
-        # read the stick model
-        mu = self.declare_variable('mu',shape=(n-1))  # 1xn-1 vector of mass/length
-        theta0 = self.declare_variable('theta0',shape=n,val=0)
+        # read the stick model properties
+        mu = self.declare_variable('mu',shape=(n-1)) # vector of mass/length
+        theta0 = self.declare_variable('theta0',shape=n,val=0) # unloaded nodal orientations
         K0a = self.declare_variable('K0a',shape=(n-1,3,3),val=0)
         delta_s0 = self.declare_variable('delta_s0',shape=n)
-        
         i_matrix = self.declare_variable('i_matrix',shape=(3,3,n-1))
         delta_rCG_tilde = self.declare_variable('delta_rCG_tilde',shape=(3,3,n-1))
         Einv = self.declare_variable('Einv',shape=(3,3,n))
         D = self.declare_variable('D',shape=(3,3,n))
         oneover = self.declare_variable('oneover',shape=(3,3,n))
-
-        """
-        # do nodal quantities of symbolic pieces in 3D matrices:
-        j = 0
-        for i in range(1): # single beam at present
-            Einv[j][:, :] = beam_list['Einv'][i][:, :]
-            D[j][:, :] = beam_list['D'][i][:, :]
-            oneover[j][:, :] = beam_list['oneover'][i][:, :]
-            j = j + 1
-        
-        # do element quatities of symbolic pieces in 3D matrices:
-        j = 0
-        for i in range(beam_list['inter_node_lim'][element, 0],
-                       beam_list['inter_node_lim'][element, 1]):
-            delta_rCG_tilde[j][:, :] = beam_list['delta_r_CG_tilde'][j][:, :]
-            i_matrix[j][:, :] = beam_list['i_matrix'][j][:, :]
-            j = j + 1
-        """
 
         self.add(calc_a_cg(num_nodes=n),name='calc_a_cg')
         a_cg = self.declare_variable('aCG',shape=(3,n-1))
@@ -117,7 +98,6 @@ class ResJac(csdl.Model):
         K = self.declare_variable('K',shape=(3,3,n))
         Ka = self.declare_variable('Ka',shape=(3,3,n-1))
 
-        
         # gravity in body fixed axes
         self.add(calcT_ac(),name='calcT_ac') # UNS, Eq. 6, Page 5
         T_E = self.declare_variable('T_E',shape=(3,3))

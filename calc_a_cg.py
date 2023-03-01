@@ -29,9 +29,6 @@ class calc_a_cg(csdl.Model):
             ri = r[:, i]
             ui = u[:, i]
             uDoti = uDot[:, i]
-            # riT = SX.sym('riT', 3, 3)
-            # uiT = SX.sym('uiT', 3, 3)
-            # inner3T = SX.sym('inner3T', 3, 3)
             # for OMEGA X (OMEGA X ri):
             riT[i,0, 0] = csdl.expand(zero,(1,1,1))
             riT[i,0, 1] = csdl.expand(-ri[2,0],(1,1,1),'ij->ijk')
@@ -90,11 +87,7 @@ class calc_a_cg(csdl.Model):
 
         # acceleration of the element
         for i in range(0, n - 1):
-            #innerT = SX.sym('innerT', 3, 3)
-            #inner2T = SX.sym('inner3T', 3, 3)
-
             # current element quantities
-            # drCG = delta_rCG_tilde[i][:, :]
             drCG = delta_rCG_tilde[:,:,i]
             collapsed_drCG = csdl.reshape(drCG,new_shape=(3,3))
             
@@ -108,7 +101,6 @@ class calc_a_cg(csdl.Model):
             ai1 = a_i[:, i + 1]
             
             # for OMEGA X (OMEGA X delta_rCG)
-            # inner = mtimes(drCG, OMEGA)
             inner = csdl.matvec(collapsed_drCG,OMEGA)
             innerT[i,0, 0] = csdl.expand(zero,(1,1,1))
             innerT[i,0, 1] = csdl.expand(-inner[2],(1,1,1))
@@ -121,7 +113,6 @@ class calc_a_cg(csdl.Model):
             innerT[i,2, 2] = csdl.expand(zero,(1,1,1))
             
             # for omega_i X (omega_i X delta_rCG)
-            # inner2 = mtimes(drCG, (0.5 * (omi + omi1)))
             vec = csdl.reshape((0.5 * (omi + omi1)),new_shape=(3,))
             inner2 = csdl.matvec(collapsed_drCG,vec)
             
@@ -136,7 +127,7 @@ class calc_a_cg(csdl.Model):
             inner2T[i,2, 2] = csdl.expand(zero,(1,1,1))
             
             # nodal a_cg (UNS, eq. 38, Page 9)
-            term_1 = 0.5 * (ai + ai1) # (3,1)
+            term_1 = 0.5 * (ai + ai1)
             term_2 = csdl.expand(csdl.matvec(collapsed_drCG,(ALPHA0 + csdl.reshape((0.5 * (omDoti + omDoti1)),new_shape=(3,)))), (3,1),'i->ij')
             collapsed_innerT = csdl.reshape(innerT[i,:,:],new_shape=(3,3))
             term_3 = csdl.expand(csdl.matvec(collapsed_innerT,OMEGA), (3,1),'i->ij')
@@ -145,8 +136,3 @@ class calc_a_cg(csdl.Model):
             term_5 = csdl.expand(2*csdl.matvec(collapsed_inner2T,OMEGA), (3,1),'i->ij')
 
             aCG[:, i] = term_1 + term_2 + term_3 + term_4 + term_5
-            
-            #aCG[:, i] = 0.5 * (ai + ai1) + mtimes(drCG, (ALPHA0 + (0.5 * (omDoti + omDoti1)))) + mtimes(innerT,
-            #                                                                                            OMEGA) + mtimes(
-            #    inner2T, (
-            #            0.5 * (omi + omi1))) + 2 * mtimes(inner2T, OMEGA)
