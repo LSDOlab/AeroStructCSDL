@@ -261,3 +261,47 @@ for i in range(n):
             K0a[i - 1, :, :] = (K[i, :, :] + K[i - 1, :, :]) / 2
     else:
         raise IOError
+    
+
+
+# calculate T_E
+R_psi = np.zeros((3,3))
+R_th = np.zeros((3,3))
+R_phi = np.zeros((3,3))
+# read aircraft states (rad)
+PHI = 0
+THETA = 0
+PSI = 0
+# calc 3 matrices
+R_psi[0, 0] = np.cos(PSI)
+R_psi[0, 1] = np.sin(PSI)
+R_psi[0, 2] = 0
+R_psi[1, 0] = -np.sin(PSI)
+R_psi[1, 1] = np.cos(PSI)
+R_psi[1, 2] = 0
+R_psi[2, 0] = 0
+R_psi[2, 1] = 0
+R_psi[2, 2] = 1
+
+R_th[0, 0] = np.cos(THETA)
+R_th[0, 1] = 0
+R_th[0, 2] = np.sin(THETA)
+R_th[1, 0] = 0
+R_th[1, 1] = 1
+R_th[1, 2] = 0
+R_th[2, 0] = -np.sin(THETA)
+R_th[2, 1] = 0
+R_th[2, 2] = np.cos(THETA)
+
+R_phi[0, 0] = 1
+R_phi[0, 1] = 0
+R_phi[0, 2] = 0
+R_phi[1, 0] = 0
+R_phi[1, 1] = np.cos(PHI)
+R_phi[1, 2] = np.sin(PHI)
+R_phi[2, 0] = 0
+R_phi[2, 1] = -np.sin(PHI)
+R_phi[2, 2] = np.cos(PHI)
+
+# Calc rotation matrix
+T_E = np.matmul(R_psi, np.matmul(R_th, R_phi))

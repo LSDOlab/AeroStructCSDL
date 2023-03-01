@@ -23,9 +23,9 @@ class ResJac(csdl.Model):
         g = self.declare_variable('g',shape=(3),val=np.array([0,0,9.81]))
         seq = self.parameters['seq']
 
-        x = self.declare_variable('x',shape=(num_variables,n),val=0.5) # state vector (18,n)
-        xd = self.declare_variable('xd',shape=(num_variables,n),val=0) # derivatives of state vector
-        xac = self.declare_variable('xac',shape=(num_variables),val=0) # aircraft state vector
+        x = self.declare_variable('x',shape=(num_variables,n)) # state vector (18,n)
+        xd = self.declare_variable('xd',shape=(num_variables,n)) # derivatives of state vector
+        xac = self.declare_variable('xac',shape=(num_variables)) # aircraft state vector
         R_prec = self.declare_variable('R_prec',shape=(24),val=1)
         
         # read x
@@ -70,10 +70,10 @@ class ResJac(csdl.Model):
         self.register_output('ALPHA0',ALPHA0)
         
         # forces and moments
-        f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=1E2)
-        m_aero = self.declare_variable('m_aero',shape=(3,n-1),val=0)
-        delta_Fapplied = self.declare_variable('delta_Fapplied',shape=(3,n-1),val=0)
-        delta_Mapplied = self.declare_variable('delta_Mapplied',shape=(3,n-1),val=0)
+        f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=1E2) # distributed aero forces
+        m_aero = self.declare_variable('m_aero',shape=(3,n-1),val=0) # distributed aero moments
+        delta_Fapplied = self.declare_variable('delta_Fapplied',shape=(3,n-1),val=0) # point loads
+        delta_Mapplied = self.declare_variable('delta_Mapplied',shape=(3,n-1),val=0) # point moments
         
         # read the stick model
         mu = self.declare_variable('mu',shape=(n-1))  # 1xn-1 vector of mass/length
