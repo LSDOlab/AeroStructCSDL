@@ -26,10 +26,10 @@ class ResJac(csdl.Model):
         x = self.declare_variable('x',shape=(num_variables,n)) # state vector
         xd = self.declare_variable('xd',shape=(num_variables,n),val=0) # time derivatives of state vector
         xac = self.declare_variable('xac',shape=(num_variables),val=0) # aircraft state vector
-        R_prec = self.declare_variable('R_prec',shape=(24),val=0) # numerical scaling
+        R_prec = self.declare_variable('R_prec',shape=(24),val=1) # numerical scaling
         
         # read x
-        r = x[0:3, :] # nodal positions (x,y,z)# y
+        r = x[0:3, :] # nodal positions (x,y,z)
         self.register_output('r',r)
         theta = x[3:6, :] # nodal orientations
         self.register_output('theta',theta)
@@ -37,7 +37,7 @@ class ResJac(csdl.Model):
         self.register_output('F',F)
         M = x[9:12, :] # nodal beam stress moments
         self.register_output('M',M)
-        u = x[12:15, :] # nodal velocities (x,y,z)# y
+        u = x[12:15, :] # nodal velocities (x,y,z)
         self.register_output('u',u)
         omega = x[15:18, :] # nodal rotations
         self.register_output('omega',omega)
@@ -47,12 +47,12 @@ class ResJac(csdl.Model):
         self.register_output('rDot',rDot)
         thetaDot = xd[3:6, :]
         #self.register_output('thetaDot',thetaDot)
-        FDot = xd[6:9, :]
-        self.register_output('FDot',FDot)
-        MDot = xd[9:12, :]
-        self.register_output('MDot',MDot)
+        #FDot = xd[6:9, :]
+        #self.register_output('FDot',FDot)
+        #MDot = xd[9:12, :]
+        #self.register_output('MDot',MDot)
         uDot = xd[12:15, :]
-        self.register_output('uDot',uDot) # y
+        self.register_output('uDot',uDot) 
         omegaDot = xd[15:18, :]
         self.register_output('omegaDot',omegaDot)
         
@@ -61,13 +61,13 @@ class ResJac(csdl.Model):
         # U = xac[3:6] # aircraft velocity
         # self.register_output('U',U)
         A0 = xac[6:9]
-        self.register_output('A0',A0)# y
+        self.register_output('A0',A0)
         THETA = xac[9:12]
         self.register_output('THETA',THETA)
         OMEGA = xac[12:15]
-        self.register_output('OMEGA',OMEGA)# y
+        self.register_output('OMEGA',OMEGA)
         ALPHA0 = xac[15:18]
-        self.register_output('ALPHA0',ALPHA0)# y
+        self.register_output('ALPHA0',ALPHA0)
         
         # forces and moments
         f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=0) # distributed aero forces
@@ -374,5 +374,3 @@ class ResJac(csdl.Model):
                 Res[9:12, i] = csdl.expand(R_prec[21:24]*(collapsed_varTip_36 - BCtip[indicesTip[3:6]]), (3,1),'i->ij')
         
         # endsection
-        residual = csdl.reshape(Res,new_shape=(18*n))
-        self.register_output('residual',residual)
