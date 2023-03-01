@@ -7,25 +7,20 @@ from BoxBeamRep import *
 
 class inputs(csdl.Model):
     def initialize(self):
-        self.parameters.declare('num_nodes')
+        self.parameters.declare('num_nodes',default=16)
         self.parameters.declare('num_variables',default=18)
-        self.parameters.declare('bc')
-        self.parameters.declare('seq')
     def define(self):
         n = self.parameters['num_nodes']
         num_variables = self.parameters['num_variables']
-        bc = self.parameters['bc']
-        seq = self.parameters['seq']
+
+        self.create_input('eye',shape=(3,3),val=np.eye(3))
+        self.create_input('t_epsilon',shape=(1,1),val=0.03)
+        self.create_input('t_gamma',shape=(1,1),val=0.03)
+        self.create_input('xac',shape=(18),val=np.zeros(18))
 
 
-        E = self.create_output('E',shape=(3,3,n),val=0)
-        for i in range(n):
-            E[0,0,i] = EIxx[i]
-            # E[i][0, 1] = 0
-            E[0,2,i] = EIxz[i]
-            # E[i][1, 0] = 0
-            E[1,1,i] = GJ[i]
-            # E[i][1, 2] = 0
-            E[2,0,i] = EIxz[i]
-            # E[i][2, 1] = 0
-            E[2,2,i] = EIzz[i]
+        self.create_input('Einv',shape=(3,3,n), val=Einv)
+        self.create_input('delta_r_CG_tilde',shape=(3,3,n-1),val=delta_r_CG_tilde)
+        self.create_input('i_matrix',shape=(3,3,n-1),val=i_matrix)
+        self.create_input('oneover',shape=(3,3,n),val=oneover)
+        self.create_input('D',shape=(3,3,n),val=D)

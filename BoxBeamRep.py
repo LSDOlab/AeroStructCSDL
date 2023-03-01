@@ -1,20 +1,20 @@
 import numpy as np
 
+n = 16
+
 # params
 E = 69E9
 G = 1E20
 rho = 2700
 seq = np.array([3, 1, 2]) # fuselage beam
-n = 16
-
 
 # cs params (all vectors of length n)
-h = 
-w = 
-t_left = 
-t_top = 
-t_right = 
-t_bot = 
+h = 4*np.ones((n))
+w = 12*np.ones((n))
+t_left = 0.1*np.ones((n))
+t_top = 0.1*np.ones((n))
+t_right = 0.1*np.ones((n))
+t_bot = 0.1*np.ones((n))
 
 
 
@@ -163,39 +163,76 @@ Q_max_x = h * t_left * (w / 2 - e_cg_x - t_left / 2) + \
 
 D = np.zeros((3,3,n))
 for i in range(n):
-    D[i][0, 0] = 0
-    D[i][0, 1] = -n_ea[i]
-    D[i][0, 2] = 0
-    D[i][1, 0] = n_ta[0]
-    D[i][1, 1] = 0
-    D[i][1, 2] = -c_ta[0]
-    D[i][2, 0] = 0
-    D[i][2, 1] = c_ea[0]
-    D[i][2, 2] = 0
+    D[0,0,i] = 0
+    D[0,1,i] = -n_ea[i]
+    D[0,2,i] = 0
+    D[1,0,i] = n_ta[0]
+    D[1,1,i] = 0
+    D[1,2,i] = -c_ta[0]
+    D[2,0,i] = 0
+    D[2,1,i] = c_ea[0]
+    D[2,2,i] = 0
 
 
 
 oneover = np.zeros((3,3,n))
 for i in range(n):
-    oneover[i][0, 0] = 1 / GKc[i]
-    oneover[i][0, 1] = 0
-    oneover[i][0, 2] = 0
-    oneover[i][1, 0] = 0
-    oneover[i][1, 1] = 1 / EA[i]
-    oneover[i][1, 2] = 0
-    oneover[i][2, 0] = 0
-    oneover[i][2, 1] = 0
-    oneover[i][2, 2] = 1 / GKn[i]
+    oneover[0,0,i] = 1 / GKc[i]
+    oneover[0,1,i] = 0
+    oneover[0,2,i] = 0
+    oneover[1,0,i] = 0
+    oneover[1,1,i] = 1 / EA[i]
+    oneover[1,2,i] = 0
+    oneover[2,0,i] = 0
+    oneover[2,1,i] = 0
+    oneover[2,2,i] = 1 / GKn[i]
 
 
-i_matrix = SX.sym(self.options['name'] + 'i_matrix', 3, 3, n - 1)
-        for i in range(n - 1):
-            i_matrix[i][0, 0] = mu[i]
-            i_matrix[i][0, 1] = 0
-            i_matrix[i][0, 2] = 0
-            i_matrix[i][1, 0] = 0
-            i_matrix[i][1, 1] = mu[i]
-            i_matrix[i][1, 2] = 0
-            i_matrix[i][2, 0] = 0
-            i_matrix[i][2, 1] = 0
-            i_matrix[i][2, 2] = mu[i]
+i_matrix = np.zeros((3,3,n-1))
+for i in range(n - 1):
+    i_matrix[0,0,i] = mu[i]
+    i_matrix[0,1,i] = 0
+    i_matrix[0,2,i] = 0
+    i_matrix[1,0,i] = 0
+    i_matrix[1,1,i] = mu[i]
+    i_matrix[1,2,i] = 0
+    i_matrix[2,0,i] = 0
+    i_matrix[2,1,i] = 0
+    i_matrix[2,2,i] = mu[i]
+
+
+delta_r_CG_tilde = np.zeros((3,3,n - 1))
+for i in range(n - 1):
+    drCG = delta_r_CG[i, :]
+    delta_r_CG_tilde[0,0,i] = 0
+    delta_r_CG_tilde[0,1,i] = -drCG[2]
+    delta_r_CG_tilde[0,2,i] = drCG[1]
+    delta_r_CG_tilde[1,0,i] = drCG[2]
+    delta_r_CG_tilde[1,1,i] = 0
+    delta_r_CG_tilde[1,2,i] = -drCG[0]
+    delta_r_CG_tilde[2,0,i] = -drCG[1]
+    delta_r_CG_tilde[2,1,i] = drCG[0]
+    delta_r_CG_tilde[2,2,i] = 0
+
+
+
+Emat = np.zeros((3, 3, n))
+Einv = np.zeros((3, 3, n))
+# E matrix where each 3x3 corresponds to cross section i at node i
+# E has the following form:
+# E = [EIcc  EIcs     EIcn;
+#      0     GJ       EIsn;
+#      0     GJ       EIsn;
+#      0     0        EInn]
+for i in range(n):
+    Emat[0,0,i] = EIxx[i]
+    Emat[0,1,i] = 0
+    Emat[0,2,i] = EIxz[i]
+    Emat[1,0,i] = 0
+    Emat[1,1,i] = GJ[i]
+    Emat[1,2,i] = 0
+    Emat[2,0,i] = EIxz[i]
+    Emat[2,1,i] = 0
+    Emat[2,2,i] = EIzz[i]
+
+    Einv[:,:,i] = np.linalg.inv(Emat[:,:,i])
