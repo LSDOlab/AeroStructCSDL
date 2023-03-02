@@ -3,6 +3,7 @@ import numpy as np
 import python_csdl_backend
 from ResJac import ResJac
 from inputs import inputs
+from BoxBeamRep import *
 
 
 class implicit_op(csdl.Model):
@@ -16,6 +17,7 @@ class implicit_op(csdl.Model):
         bc = self.parameters['bc']
 
         self.add(inputs(num_nodes=n),name='inputs')
+        self.create_input('x',shape=(18,n),val=x)
 
         solve_res = self.create_implicit_operation(ResJac(num_nodes=n,seq=seq,bc=bc))
         solve_res.declare_state('x', residual='Res')

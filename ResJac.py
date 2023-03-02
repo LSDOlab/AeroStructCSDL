@@ -70,16 +70,16 @@ class ResJac(csdl.Model):
         self.register_output('ALPHA0',ALPHA0)
         
         # forces and moments
-        f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=10) # distributed aero forces
+        f_aero = self.declare_variable('f_aero',shape=(3,n-1),val=0) # distributed aero forces
         m_aero = self.declare_variable('m_aero',shape=(3,n-1),val=0) # distributed aero moments
         delta_Fapplied = self.declare_variable('delta_Fapplied',shape=(3,n-1),val=0) # point loads
         delta_Mapplied = self.declare_variable('delta_Mapplied',shape=(3,n-1),val=0) # point moments
         
         # read the stick model properties
         mu = self.declare_variable('mu',shape=(n-1)) # vector of mass/length
-        theta0 = self.declare_variable('theta0',shape=n,val=0) # unloaded nodal orientations
+        theta0 = self.declare_variable('theta0',shape=(n),val=0) # unloaded nodal orientations
         K0a = self.declare_variable('K0a',shape=(n-1,3,3))
-        delta_s0 = self.declare_variable('delta_s0',shape=n,val=1)
+        delta_s0 = self.declare_variable('delta_s0',shape=(n-1))
         i_matrix = self.declare_variable('i_matrix',shape=(3,3,n-1))
         delta_rCG_tilde = self.declare_variable('delta_rCG_tilde',shape=(3,3,n-1))
         Einv = self.declare_variable('Einv',shape=(3,3,n))
@@ -235,13 +235,12 @@ class ResJac(csdl.Model):
         for i in range(0, n):
             if i <= n - 2:
                 # rows 0-2: strain-displacement (ASW, Eq. 48, page 12)
-                # s_vec[1,i] = csdl.expand(one,(1,1),'i->ij') ??????????????????????????????????????????????????????????????????????????????????
-                s_vec[1,i] = csdl.expand(zero,(1,1),'i->ij')
+                s_vec[1,i] = csdl.expand(one,(1,1),'i->ij')
                 tempVector = csdl.reshape(s_vec[:,i] + 0.5*(strainsCSN[:, i] + strainsCSN[:, i + 1]), new_shape=(3)) # (0,1,0)
                 
                 # rows 0-3: ------------------Compatibility Equations------------------
                 collapsed_Ta = csdl.reshape(Ta[:,:,i], new_shape=(3,3)) # eye ?
-                t1 =  csdl.expand(delta_s0[i],(3)) * csdl.matvec(csdl.transpose(collapsed_Ta), tempVector)
+                t1 = csdl.expand(delta_s0[i],(3)) * csdl.matvec(csdl.transpose(collapsed_Ta), tempVector)
                 collapsed_omega_term = csdl.reshape(omega[:,i+1] + omega[:,i], new_shape=(3))
                 collapsed_r_term = csdl.reshape(r[:,i+1] - r[:,i], new_shape=(3))
                 collapsed_u_term = csdl.reshape(u[:,i+1] - u[:,i], new_shape=(3))
@@ -281,11 +280,11 @@ class ResJac(csdl.Model):
                 ex_delta_s = csdl.expand(delta_s[i], (3)) # correct maybe ~ 1E-19
                 collapsed_delta_Fapplied = csdl.reshape(delta_Fapplied[:, i], new_shape=(3)) # correct 0
                 Res[6:9,i] = csdl.expand(R_prec[6:9]*(collapsed_F_term + (collapsed_f*ex_delta_s) + collapsed_delta_Fapplied), (3,1),'i->ij')
+
+                self.print_var((collapsed_f))
                 
                 
                 # rows 9-11: moment equilibrium (ASW, Eq. 55, page 13)
-                #Res[9:12,i] = R_prec[9:12] * (
-                #        M[:, i + 1] - M[:, i] + m[:, i] * delta_s[i] + delta_Mapplied[:, i] + csdl.cross(delta_r[:, i],Fav[:, i]))
                 collapsed_M = csdl.reshape(M[:,i], new_shape=(3))
                 collapsed_M_1 = csdl.reshape(M[:,i+1], new_shape=(3))
                 collapsed_m = csdl.reshape(m[:,i], new_shape=(3))
@@ -363,12 +362,3 @@ class ResJac(csdl.Model):
                 # tip
                 Res[6:9, i] = csdl.expand(R_prec[18:21]*(collapsed_varTip_03 - BCtip[indicesTip[0:3]]), (3,1),'i->ij')
                 Res[9:12, i] = csdl.expand(R_prec[21:24]*(collapsed_varTip_36 - BCtip[indicesTip[3:6]]), (3,1),'i->ij')
-        
-        # endsection
-
-
-        # create linear system
-        # res is (18xn)
-        # x is (18xn)
-        # residual = csdl.matmat(Res,x)
-        # self.register_output('residual',residual)

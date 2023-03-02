@@ -3,6 +3,7 @@ import numpy as np
 import python_csdl_backend
 from ResJac import ResJac
 from inputs import inputs
+from BoxBeamRep import *
 
 
 class test(csdl.Model):
@@ -16,6 +17,8 @@ class test(csdl.Model):
         bc = self.parameters['bc']
 
         self.add(inputs(num_nodes=n),name='inputs')
+
+        self.create_input('x',shape=(18,n),val=x)
 
         self.add(ResJac(num_nodes=n,seq=seq,bc=bc), name='ResJac')
 
@@ -32,4 +35,4 @@ if __name__ == '__main__':
     sim.run()
 
     Res = sim['Res']
-    print(Res[8,:]) # most of row 1 is -1, first element of row 5 is pi/2, last entry of row 8 is -1000
+    print(Res)

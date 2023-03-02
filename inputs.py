@@ -26,3 +26,5 @@ class inputs(csdl.Model):
         self.create_input('D',shape=(3,3,n),val=D)
         self.create_input('mu',shape=(n-1),val=mu)
         self.create_input('K0a',shape=(n-1,3,3),val=K0a)
+
+        self.create_input('delta_s0',shape=(n-1),val=delta_s0)
