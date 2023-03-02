@@ -11,10 +11,10 @@ seq = np.array([3, 1, 2]) # fuselage beam
 # cs params (all vectors of length n)
 h = 0.5*np.ones((n))
 w = 3*np.ones((n))
-t_left = 0.1*np.ones((n))
-t_top = 0.1*np.ones((n))
-t_right = 0.1*np.ones((n))
-t_bot = 0.1*np.ones((n))
+t_left = 0.15*np.ones((n))
+t_top = 0.15*np.ones((n))
+t_right = 0.15*np.ones((n))
+t_bot = 0.15*np.ones((n))
 
 
 
@@ -139,6 +139,7 @@ m_cg_z = (cg_sect1_z * A_sect1 * rho_sect1 +
             A_sect2 * rho_sect2 +
             A_sect3 * rho_sect3 +
             A_sect4 * rho_sect4)
+
 # column i is the position of the CG on the cross-section i, relative to the csn origin, expressed in xyz
 delta_r_CG = np.zeros((n - 1, 3))
 for i in range(n - 1):
@@ -242,7 +243,7 @@ for i in range(n):
 
 
 # K0a
-th0 = np.ones((3,n))*1
+th0 = np.ones((3,n))*np.pi/2
 K0a = np.zeros((n - 1, 3, 3))
 K = np.zeros((n, 3, 3))
 for i in range(n):
@@ -263,7 +264,7 @@ for i in range(n):
         raise IOError
     
 
-
+"""
 # calculate T_E
 R_psi = np.zeros((3,3))
 R_th = np.zeros((3,3))
@@ -305,3 +306,4 @@ R_phi[2, 2] = np.cos(PHI)
 
 # Calc rotation matrix
 T_E = np.matmul(R_psi, np.matmul(R_th, R_phi))
+"""
