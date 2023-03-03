@@ -17,10 +17,9 @@ class implicit_op(csdl.Model):
         bc = self.parameters['bc']
 
         self.add(inputs(num_nodes=n),name='inputs')
-        self.create_input('x',shape=(18,n),val=x)
-
+        
         solve_res = self.create_implicit_operation(ResJac(num_nodes=n,seq=seq,bc=bc))
-        solve_res.declare_state('x', residual='Res')
+        solve_res.declare_state('x', residual='Res',val=x)
         solve_res.nonlinear_solver = csdl.NewtonSolver(
         solve_subsystems=False,
         maxiter=100,

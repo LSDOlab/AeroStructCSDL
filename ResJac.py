@@ -42,6 +42,7 @@ class ResJac(csdl.Model):
         omega = x[15:18, :] # nodal rotations
         self.register_output('omega',omega)
 
+        
         # read xDot (time derivatives)
         rDot = xd[0:3, :]
         self.register_output('rDot',rDot)
@@ -88,6 +89,7 @@ class ResJac(csdl.Model):
 
         self.add(calc_a_cg(num_nodes=n),name='calc_a_cg')
         a_cg = self.declare_variable('aCG',shape=(3,n-1))
+        self.print_var(a_cg)
         
         # get T and K matrices:
         self.add(CalcNodalT(num_nodes=n,seq=seq),name='CalcNodalT')
@@ -224,12 +226,6 @@ class ResJac(csdl.Model):
 
         one = self.declare_variable('one',val=1)
         zero = self.declare_variable('zero',val=0)
-
-        # dummy vars for csdl implementation
-        vr_temp_03 = self.create_output('vr_temp_03',shape=(3,n))
-        vr_temp_36 = self.create_output('vr_temp_36',shape=(3,n))
-        vt_temp_03 = self.create_output('vt_temp_03',shape=(3,n))
-        vt_temp_36 = self.create_output('vt_temp_36',shape=(3,n))
         
         # section residual
         for i in range(0, n):
@@ -336,29 +332,15 @@ class ResJac(csdl.Model):
                 
                 indicesRoot = []
                 indicesTip = []
-                
                 for k in range(0, len(indicesRoot_)):
                     if indicesRoot_[k]:
                         indicesRoot.append(k)
                     if indicesTip_[k]:
                         indicesTip.append(k)
                 
-                # added csdl indexing code in a for loop...
-                for j in range(3):
-                    vr_temp_03[j,i] = varRoot[indicesRoot[0:3][j],i]
-                    vr_temp_36[j,i] = varRoot[indicesRoot[3:6][j],i]
-                    vt_temp_03[j,i] = varTip[indicesRoot[0:3][j],i]
-                    vt_temp_36[j,i] = varTip[indicesRoot[3:6][j],i]
-            
-                collapsed_varRoot_03 = csdl.reshape(vr_temp_03[:,i], new_shape=(3))
-                collapsed_varRoot_36 = csdl.reshape(vr_temp_36[:,i], new_shape=(3))
-                collapsed_varTip_03 = csdl.reshape(vt_temp_03[:,i], new_shape=(3))
-                collapsed_varTip_36 = csdl.reshape(vt_temp_36[:,i], new_shape=(3))
-                
                 # root
-                Res[0:3, 0] = csdl.expand(R_prec[12:15]*(collapsed_varRoot_03 - BCroot[indicesRoot[0:3]]), (3,1),'i->ij')
-                Res[3:6, 0] = csdl.expand(R_prec[15:18]*(collapsed_varRoot_36 - BCroot[indicesRoot[3:6]]), (3,1),'i->ij')
-                
+                Res[0:3, 0] = csdl.expand(R_prec[12:15]*(csdl.reshape(varRoot[indicesRoot[0]:indicesRoot[3],i], new_shape=(3)) - BCroot[indicesRoot[0:3]]), (3,1),'i->ij')
+                Res[3:6, 0] = csdl.expand(R_prec[15:18]*(csdl.reshape(varRoot[indicesRoot[2]:indicesRoot[5],i], new_shape=(3)) - BCroot[indicesRoot[3:6]]), (3,1),'i->ij') # 6 to 5
                 # tip
-                Res[6:9, i] = csdl.expand(R_prec[18:21]*(collapsed_varTip_03 - BCtip[indicesTip[0:3]]), (3,1),'i->ij')
-                Res[9:12, i] = csdl.expand(R_prec[21:24]*(collapsed_varTip_36 - BCtip[indicesTip[3:6]]), (3,1),'i->ij')
+                Res[6:9, i] = csdl.expand(R_prec[18:21]*(csdl.reshape(varTip[indicesRoot[0]:indicesRoot[3],i], new_shape=(3)) - BCtip[indicesTip[0:3]]), (3,1),'i->ij')
+                Res[9:12, i] = csdl.expand(R_prec[21:24]*(csdl.reshape(varTip[indicesRoot[2]:indicesRoot[5],i], new_shape=(3)) - BCtip[indicesTip[3:6]]), (3,1),'i->ij') # 6 to 5

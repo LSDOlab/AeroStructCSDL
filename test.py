@@ -36,3 +36,4 @@ if __name__ == '__main__':
 
     Res = sim['Res']
     print(Res)
+    print(Res[7,:])

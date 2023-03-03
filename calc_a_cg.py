@@ -11,7 +11,7 @@ class calc_a_cg(csdl.Model):
 
         r = self.declare_variable('r',shape=(3,n))
         u = self.declare_variable('u',shape=(3,n))
-        uDot = self.declare_variable('uDot',shape=(3,n))
+        uDot = self.declare_variable('uDot',shape=(3,n),val=0)
         A0 = self.declare_variable('A0',shape=(3))
         OMEGA = self.declare_variable('OMEGA',shape=(3))
         ALPHA0 = self.declare_variable('ALPHA0',shape=(3))
@@ -81,7 +81,7 @@ class calc_a_cg(csdl.Model):
 
         delta_rCG_tilde = self.declare_variable('delta_rCG_tilde',shape=(3,3,n-1))
         omega = self.declare_variable('omega',shape=(3,n))
-        omegaDot = self.declare_variable('omegaDot',shape=(3,n))
+        omegaDot = self.declare_variable('omegaDot',shape=(3,n),val=0)
         innerT = self.create_output('innerT',shape=(n-1,3,3))
         inner2T = self.create_output('inner2T',shape=(n-1,3,3))
 
